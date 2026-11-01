@@ -109,7 +109,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   <div class="pinfo" id="pinfo"></div>
   <div class="row"><button class="btn sec" id="btnCont" hidden>CONTINUAR</button></div>
   <div class="row"><button class="btn" id="btnStart">VOAR</button><button class="btn sec" id="btnBuy" hidden>COMPRAR</button></div>
-  <div class="row"><button class="btn sec sm" id="btnDiff">DIF</button><button class="btn sec sm" id="btnStats">ESTAT.</button><button class="btn sec sm" id="btnGloss">GLOSSÁRIO</button><button class="btn sec sm" id="btnOpt">OPÇÕES</button></div>
+  <div class="row"><button class="btn sec sm" id="btnStats">ESTAT.</button><button class="btn sec sm" id="btnGloss">GLOSSÁRIO</button><button class="btn sec sm" id="btnOpt">OPÇÕES</button></div>
   <p style="font-size:.6em">Arraste em qualquer ponto para mover · tiro automático<br>Teclado: setas/WASD · Espaço = habilidade · P = pausa</p>
 </div>
 
@@ -154,9 +154,9 @@ function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math
 const mem={};
 function sget(k,d){try{const v=localStorage.getItem('asas_'+k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}}
 function sset(k,v){mem[k]=v;try{localStorage.setItem('asas_'+k,JSON.stringify(v))}catch(e){}}
-const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),diff:sget('diff','normal'),stats:sget('stats',{}),dbg:sget('dbg',{})};
+const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),stats:sget('stats',{}),dbg:sget('dbg',{})};
 const VERSION='1.0';
-function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('diff',save.diff);sset('stats',save.stats);sset('dbg',save.dbg)}
+function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('stats',save.stats);sset('dbg',save.dbg)}
 
 /* ---------- áudio 8 bits (Web Audio, sem ficheiros) ---------- */
 let ac=null,master=null,muted=sget('muted',false);
@@ -471,8 +471,8 @@ function drawEB(b){
 /* ---------- inimigos ---------- */
 function mineSpr(){return ES.mine||(ES.mine=makeSpr(["...s","..kk",".kmm","skmh",".kmm","..kk","...s"],{s:'#e8e8e8',k:'#2a2a30',m:'#5a6070',h:'#ff5a3c'},{outline:'#0a0a10'}))}
 const SPEC={convoy:{n:'COMBOIO INIMIGO',d:'Destrua o comboio: moedas extras!'},mines:{n:'CAMPO MINADO',d:'Minas explodem em balas. Passe pelas brechas!'},storm:{n:'TEMPESTADE',d:'Raios caem do céu. Fuja das marcas!'}};
-const DIFFS={easy:{n:'FÁCIL',b:1,h:1,c:1},normal:{n:'NORMAL',b:1.15,h:1.35,c:.8},hard:{n:'DIFÍCIL',b:1.3,h:1.8,c:.62}};
-function DF(){return DIFFS[save.diff]||DIFFS.normal}
+/* dificuldade progressiva: sobe a cada fase (sem seletor) */
+function DF(){const L=Math.max(1,G.level||1)-1;return{b:Math.min(1.5,1.05+.015*L),h:Math.min(2.6,1+.07*L),c:Math.max(.55,1-.025*L)}}
 function spawn(t,x,y,o){
   const base={fighter:{hp:2,pts:100,spr:ES.fighter},ace:{hp:7,pts:600,spr:ES.ace},bomber:{hp:12,pts:900,spr:ES.bomber},dive:{hp:2,pts:150,spr:ES.dive},ground:{hp:3,pts:200,spr:ES.ground},mine:{hp:2,pts:60,spr:mineSpr()}}[t];
   const sm=(t==='fighter'||t==='dive')?Math.floor(G.level/3):Math.floor(G.level/2),hp=Math.max(1,Math.round((base.hp+sm+(hasMod('armored')?1:0))*DF().h));
@@ -1268,11 +1268,9 @@ function continueRun(){const r=getRun();if(!r)return;audio();sfx('ui');newRun(r)
 function refreshMenu(){
   const r=getRun(),b=$('btnCont');b.hidden=!r;
   if(r){const sec=Math.floor((r.g.level-1)/4)+1,sis=(r.g.level-1)%4+1;b.textContent='CONTINUAR '+sec+'-'+sis+' · '+r.g.score.toLocaleString('pt-PT')}
-  $('btnDiff').textContent='DIF: '+DF().n;
 }
 const _rm=renderMenu;renderMenu=function(){_rm();refreshMenu()};
 $('btnCont').onclick=continueRun;
-$('btnDiff').onclick=()=>{const k=Object.keys(DIFFS),i=(k.indexOf(save.diff)+1)%k.length;save.diff=k[i];persist();sfx('ui');refreshMenu()};
 function openInfo(t,html,after){$('iTitle').textContent=t;$('iBody').innerHTML=html;$('info').classList.add('on');$('info').scrollTop=0;if(after)after()}
 $('btnInfoClose').onclick=()=>{$('info').classList.remove('on');sfx('ui')};
 const fmtT=s=>Math.floor(s/3600)?Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'min':Math.floor(s/60)+'min '+(s%60)+'s';
@@ -1313,8 +1311,8 @@ function bindOpt(){
   $('oCoins').onclick=()=>{save.coins+=500;persist();renderMenu();msg('+500¢ (total '+save.coins+')')};
   $('oAll').onclick=()=>{save.unlocked=PLANE_IDS.slice();persist();renderMenu();msg('Todos desbloqueados')};
   $('oExp').onclick=()=>{const j=JSON.stringify({save,run:getRun()});try{navigator.clipboard.writeText(j);msg('Save copiado!')}catch(e){prompt('Copie o save:',j)}};
-  $('oImp').onclick=()=>{const j=prompt('Cole o save exportado:');if(!j)return;try{const o=JSON.parse(j).save;['coins','best','unlocked','sel','diff','stats','dbg'].forEach(k=>{if(o[k]!==undefined)save[k]=o[k]});persist();renderMenu();msg('Save importado!')}catch(e){msg('Save inválido')}};
-  $('oReset').onclick=()=>{if(!confirm('Apagar TODO o progresso?'))return;Object.assign(save,{coins:0,best:0,unlocked:['spit'],sel:'spit',diff:'normal',stats:{},dbg:{}});persist();sset('run',null);selMenu='spit';renderMenu();msg('Progresso apagado')};
+  $('oImp').onclick=()=>{const j=prompt('Cole o save exportado:');if(!j)return;try{const o=JSON.parse(j).save;['coins','best','unlocked','sel','stats','dbg'].forEach(k=>{if(o[k]!==undefined)save[k]=o[k]});persist();renderMenu();msg('Save importado!')}catch(e){msg('Save inválido')}};
+  $('oReset').onclick=()=>{if(!confirm('Apagar TODO o progresso?'))return;Object.assign(save,{coins:0,best:0,unlocked:['spit'],sel:'spit',stats:{},dbg:{}});persist();sset('run',null);selMenu='spit';renderMenu();msg('Progresso apagado')};
 }
 $('btnOpt').onclick=()=>{sfx('ui');openInfo('OPÇÕES',optHtml(),bindOpt)};
 /* desenho de debug */
