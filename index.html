@@ -178,7 +178,7 @@ const mem={};
 function sget(k,d){try{const v=localStorage.getItem('asas_'+k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}}
 function sset(k,v){mem[k]=v;try{localStorage.setItem('asas_'+k,JSON.stringify(v))}catch(e){}}
 const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),stats:sget('stats',{}),dbg:sget('dbg',{}),opt:sget('opt',{})};
-const VERSION='1.1.1',BUILD='04/11/2026';
+const VERSION='1.1.3',BUILD='04/11/2026';
 function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('stats',save.stats);sset('dbg',save.dbg);sset('opt',save.opt)}
 
 /* ---------- áudio 8 bits (Web Audio, sem ficheiros) ---------- */
@@ -327,8 +327,9 @@ const ES={};
 function buildEnemySprites(theme){
   const sym=(px,cx,dx,y,col,w=1,h=1)=>{for(const sg of[-1,1])for(let i=0;i<w;i++)for(let j=0;j<h;j++)px(cx+sg*(dx+i),y+j,col)};
   const disc=(px,cx,dx,y,col)=>{sym(px,cx,dx,y,col);sym(px,cx,dx,y-1,col);sym(px,cx,dx,y+1,col);sym(px,cx,dx-1,y,col);sym(px,cx,dx+1,y,col)};
-  ES.fighter=finishSpr(planeCv({W:21,H:19,col:['#d9c48a','#f3e6b4','#8a7448'],prof:[[0,0],[2,1],[4,2],[12,2],[14,1],[18,0]],glass:[6,3,1],
-    wing:{y:6,cr:6,ct:4,span:10,sw:.12,panel:true},tail:{y:14,cr:3,ct:2,span:5,sw:.25},mark:(px,cx)=>{disc(px,cx,6,8,'#e63946');sym(px,cx,0,4,'#8a7448',3,1)}}));
+  const FC=theme==='desert'?['#c9d3e2','#f4f8ff','#6c7a92']:['#d9c48a','#f3e6b4','#8a7448'];
+  ES.fighter=finishSpr(planeCv({W:21,H:19,col:FC,prof:[[0,0],[2,1],[4,2],[12,2],[14,1],[18,0]],glass:[6,3,1],
+    wing:{y:6,cr:6,ct:4,span:10,sw:.12,panel:true},tail:{y:14,cr:3,ct:2,span:5,sw:.25},mark:(px,cx)=>{disc(px,cx,6,8,'#e63946');sym(px,cx,0,4,FC[2],3,1)}}));
   ES.ace=finishSpr(planeCv({W:29,H:23,col:['#d8402c','#ff8a70','#7a1a14'],prof:[[0,-1],[1,0],[3,1],[5,2],[14,2],[17,1],[22,0]],glass:[4,4,1],glassCol:'#ffe27a',
     wing:{y:9,cr:6,ct:4,span:13,sw:0,panel:true},tail:{y:18,cr:3,ct:2,span:7,sw:.15},eng:[{dx:6,y:3,len:12}],
     mark:(px,cx)=>{sym(px,cx,10,10,'#ffe27a',3,1);sym(px,cx,10,12,'#ffe27a',3,1);sym(px,cx,3,19,'#ffe27a',3,1)}}));
@@ -488,15 +489,17 @@ function drawEB(b){
     const s=BSP.rk[Math.floor(G.time*14+b.x)%2],th=Math.round((Math.atan2(b.vy,b.vx)+Math.PI/2)/(Math.PI/8))*(Math.PI/8);
     ctx.save();ctx.translate(x,y);ctx.rotate(th);ctx.drawImage(s.c,-(s.w>>1),-5);ctx.restore();
   }
-  else{const v=Math.abs(b.vy)>=Math.abs(b.vx);ctx.fillStyle='#1a0e02';if(v)ctx.fillRect(x-1,y-4,4,8);else ctx.fillRect(x-4,y-1,8,4);ctx.fillStyle='#ffa81c';if(v){ctx.fillRect(x,y-3,2,6);ctx.fillStyle='#fff';ctx.fillRect(x,y+2,2,1)}else{ctx.fillRect(x-3,y,6,2);ctx.fillStyle='#fff';ctx.fillRect(x+2,y,1,2)}}
+  else{const v=Math.abs(b.vy)>=Math.abs(b.vx);ctx.fillStyle='#1a0e02';if(v)ctx.fillRect(x-1,y-4,4,8);else ctx.fillRect(x-4,y-1,8,4);ctx.fillStyle='#ff4a1c';if(v){ctx.fillRect(x,y-3,2,6);ctx.fillStyle='#fff';ctx.fillRect(x,y+2,2,1)}else{ctx.fillRect(x-3,y,6,2);ctx.fillStyle='#fff';ctx.fillRect(x+2,y,1,2)}}
 }
 
 /* ---------- inimigos ---------- */
 function mineSpr(){return ES.mine||(ES.mine=makeSpr(["...s","..kk",".kmm","skmh",".kmm","..kk","...s"],{s:'#e8e8e8',k:'#2a2a30',m:'#5a6070',h:'#ff5a3c'},{outline:'#0a0a10'}))}
-const SPEC={convoy:{n:'COMBOIO INIMIGO',d:'Destrua o comboio: moedas extras!'},mines:{n:'CAMPO MINADO',d:'Minas perto de você explodem em balas. Passe pelas brechas!'},storm:{n:'TEMPESTADE',d:'Raios caem do céu. Fuja das marcas!'}};
+const SPEC={convoy:{n:'COMBOIO INIMIGO',d:'Destrua o comboio: moedas extras!'},mines:{n:'CAMPO MINADO',d:'Minas explodem em balas. Passe pelas brechas!'},storm:{n:'TEMPESTADE',d:'Raios caem do céu. Fuja das marcas!'}};
 /* dificuldade progressiva: sobe a cada fase (sem seletor) */
-const EL=()=>{const L=Math.max(1,G.level||1);return L<=4?L:4+(L-4)*.55};
-function DF(){const L=EL()-1;return{b:Math.min(1.45,1.03+.013*L),h:Math.min(2.4,1+.06*L),c:Math.max(.58,1-.022*L)}}
+/* curva de dificuldade (por fase global L): h=vida inimiga, b=vel. das balas, c=cadência, p=poder do jogador por setor */
+const TUNE={h:.14,b:.028,c:.028,p:.05,hc:3,bc:1.6,cc:.5};
+const EL=()=>Math.max(1,G.level||1);
+function DF(){const L=EL()-1;return{b:Math.min(TUNE.bc,1.03+TUNE.b*L),h:Math.min(TUNE.hc,1+TUNE.h*L),c:Math.max(TUNE.cc,1-TUNE.c*L)}}
 function spawn(t,x,y,o){
   const base={fighter:{hp:2,pts:100,spr:ES.fighter},ace:{hp:7,pts:600,spr:ES.ace},bomber:{hp:12,pts:900,spr:ES.bomber},dive:{hp:2,pts:150,spr:ES.dive},ground:{hp:3,pts:200,spr:ES.ground},mine:{hp:2,pts:60,spr:mineSpr()}}[t];
   const sm=(t==='fighter'||t==='dive')?Math.floor(EL()/3):Math.floor(EL()/2),hp=Math.max(1,Math.round((base.hp+sm+(hasMod('armored')?1:0))*DF().h));
@@ -544,7 +547,7 @@ function drawEnemy(e){
 function killEnemy(e){
   e.dead=true;G.kills++;regKill();addScore(e.pts,e.x,e.y);explode(e.x,e.y,e.t==='bomber'?20:e.t==='ace'?14:9);
   if(e.drop||e.t==='bomber'||Math.random()<(hasMod('jackpot')?.1:.04))dropPow(e.x,e.y);
-  if(e.t==='mine'&&player&&Math.hypot(e.x-player.x,e.y-player.y)<38){for(let i=0;i<5;i++)ebullet(e.x,e.y,i*Math.PI*.4+.3,34,'dot')}
+  if(e.t==='mine'&&e.y>-4){for(let i=0;i<5;i++)ebullet(e.x,e.y,i*Math.PI*.4+.3,40,'dot')}
   const cn=e.bonus||(e.t==='ace'||e.t==='bomber'?1:(e.t==='mine'?0:(Math.random()<.12?1:0)));if(cn)dropCoin(e.x,e.y,cn);
 }
 
@@ -582,7 +585,7 @@ const PWDUR={shrink:9,rapid:8,shield:12,power:10,slow:6};
 let DRONE=null;
 function buildExtraSprites(){DRONE=makeSpr(["..y","..G",".gg","ggg"],{y:'#ffd84a',G:'#3a4a60',g:'#9fb4d0'})}
 const small=()=>G.time<pw.shrink;
-function dmgMul(){return PLANES[G.plane].dmg*(1+[0,.2,.4,.6][lv('dmg')]*rmul('dmg'))*(small()?.8:1)}
+function dmgMul(){return PLANES[G.plane].dmg*(1+TUNE.p*Math.min(5,((G.level||1)-1)/4))*(1+[0,.2,.4,.6][lv('dmg')]*rmul('dmg'))*(small()?.8:1)}
 function fireRate(){return PLANES[G.plane].fire*(1+[0,.15,.3,.45][lv('rate')]*rmul('rate'))*(G.time<pw.rapid?1.6:1)*(lv('laser')?1.7:1)}
 function moveSpeed(){return 95*PLANES[G.plane].speed*(1+[0,.08,.16,.24][lv('speed')]*rmul('speed'))*(small()?1.12:1)}
 function hitR(){return PLANES[G.plane].hit*(small()?.55:1)}
@@ -814,7 +817,7 @@ const BOSSES={
 };
 const BOSS_ORDER=['fort','panzer','zeppelin','storm'];
 function spawnBoss(){
-  const sec=G.sector,type=BOSS_ORDER[(sec-1)%4],D=BOSSES[type],hp=Math.round((80+34*(sec-1)+G.level*2)*5*D.hpm*DF().h*(G.bossBuff||1)),ph=26+sec*6;
+  const sec=G.sector,type=BOSS_ORDER[(sec-1)%4],D=BOSSES[type],hp=Math.round((80+34*(sec-1)+G.level*2)*5*D.hpm*Math.pow(DF().h,.6)*(G.bossBuff||1)),ph=26+sec*6;
   boss={type,D,x:W/2,y:-50,ty:D.ty,w:D.w,h:D.h,hp,maxhp:hp,stage:1,age:0,dir:1,atkT:2.2,ringT:6,tel:0,diveT:7,zapT:3,flyT:5,flash:0,enter:true,dying:false,
     pods:D.pods.map(o=>({ox:o[0],oy:o[1],hp:ph,maxhp:ph,alive:true,rt:0,flash:0,ft:rand(1,2.2)})),name:D.name,col:D.col};
   Music.setBoss(true);
@@ -1041,7 +1044,7 @@ function startLevel(){
   G.sector=Math.floor((G.level-1)/4)+1;const sis=(G.level-1)%4+1,th=THEME_ORDER[(G.sector-1)%4];
   G.special=sis===2?['convoy','mines','storm'][(G.sector-1)%3]:null;
   if(th!==theme){theme=th;buildEnemySprites(theme)}
-  if(sis===1){mods=[];if(G.sector>2||G.extraMod){const ids=Object.keys(MODS),n=Math.min(3,(G.sector>=5?2:G.sector>2?1:0)+(G.extraMod?1:0));G.extraMod=false;while(mods.length<n){const m=pick(ids);if(!mods.includes(m))mods.push(m)}}}
+  if(sis===1){mods=[];if(G.sector>1||G.extraMod){const ids=G.sector<=2?['wind','armored']:Object.keys(MODS),n=Math.min(3,(G.sector>=5?2:G.sector>1?1:0)+(G.extraMod?1:0));G.extraMod=false;while(mods.length<n){const m=pick(ids);if(!mods.includes(m))mods.push(m)}}}
   {const sh=G.level%4===0?pw.shield:0;pw={shrink:0,rapid:0,shield:sh,power:0,slow:0}}
   hazards=[];enemies=[];ebul=[];pbul=[];missiles=[];drops=[];timers=[];warns=[];boss=null;G.stageT=0;G.stageDone=false;G.lostLife=false;G.state='play';G.bossWarn=0;player.inv=1.5;
   if(G.level%4===0){script=[];G.bossWarn=3;banner('ATENÇÃO','CHEFE A CAMINHO',3,true);sfx('warn');Music.setBoss(true)}
