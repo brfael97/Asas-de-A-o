@@ -178,7 +178,7 @@ const mem={};
 function sget(k,d){try{const v=localStorage.getItem('asas_'+k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}}
 function sset(k,v){mem[k]=v;try{localStorage.setItem('asas_'+k,JSON.stringify(v))}catch(e){}}
 const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),stats:sget('stats',{}),dbg:sget('dbg',{}),opt:sget('opt',{}),tele:sget('tele',[])};
-const VERSION='1.2.0',BUILD='04/11/2026';
+const VERSION='1.2.1',BUILD='04/11/2026';
 function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('stats',save.stats);sset('dbg',save.dbg);sset('opt',save.opt);sset('tele',save.tele)}
 
 /* ---------- áudio 8 bits (Web Audio, sem ficheiros) ---------- */
@@ -1394,6 +1394,13 @@ function bindOpt(){
 
 /* aviso de nova versão (ao abrir o jogo) */
 function showUpd(v){
+  // no menu: atualiza sozinho (limpa caches e recarrega uma vez por versão); no meio da partida: só avisa
+  let tried=null;try{tried=sessionStorage.getItem('asas_upd')}catch(e){}
+  if(G.state==='menu'&&tried!==v){
+    try{sessionStorage.setItem('asas_upd',v)}catch(e){}
+    (async()=>{try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)));const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()))}catch(e){}location.replace(location.pathname+'?v='+v)})();
+    return;
+  }
   if($('upd'))return;const d=document.createElement('div');d.id='upd';d.textContent='Nova versão '+v+' disponível. Reinicie o jogo para atualizar.';
   $('stage').appendChild(d);setTimeout(()=>{d.style.transition='opacity .6s';d.style.opacity=0;setTimeout(()=>d.remove(),700)},7000);
 }
@@ -1401,7 +1408,7 @@ function checkUpdate(){
   if(!/^https?:/.test(location.protocol))return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const VERSION='([^']+)'/);if(m&&m[1]!==VERSION)showUpd(m[1])}).catch(()=>{});
 }
-setTimeout(checkUpdate,2500);
+setTimeout(checkUpdate,1200);
 if(!save.dbg.on)save.dbg={};
 /* desenho de debug */
 let _fp=60,_ft=performance.now();
