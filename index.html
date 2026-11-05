@@ -178,7 +178,7 @@ const mem={};
 function sget(k,d){try{const v=localStorage.getItem('asas_'+k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}}
 function sset(k,v){mem[k]=v;try{localStorage.setItem('asas_'+k,JSON.stringify(v))}catch(e){}}
 const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),stats:sget('stats',{}),dbg:sget('dbg',{}),opt:sget('opt',{}),tele:sget('tele',[])};
-const VERSION='1.2.1',BUILD='04/11/2026';
+const VERSION='1.2.2',BUILD='04/11/2026';
 function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('stats',save.stats);sset('dbg',save.dbg);sset('opt',save.opt);sset('tele',save.tele)}
 
 /* ---------- áudio 8 bits (Web Audio, sem ficheiros) ---------- */
@@ -497,8 +497,9 @@ function mineSpr(){return ES.mine||(ES.mine=makeSpr(["...s","..kk",".kmm","skmh"
 const SPEC={convoy:{n:'COMBOIO INIMIGO',d:'Destrua o comboio: moedas extras!'},mines:{n:'CAMPO MINADO',d:'Minas explodem em balas. Passe pelas brechas!'},storm:{n:'TEMPESTADE',d:'Raios caem do céu. Fuja das marcas!'}};
 /* dificuldade progressiva: sobe a cada fase (sem seletor) */
 /* curva de dificuldade (por fase global L): h=vida inimiga, b=vel. das balas, c=cadência, p=poder do jogador por setor */
-const TUNE={h:.035,b:.010,c:.012,p:.06,hc:2.2,bc:1.4,cc:.65};
-const EL=()=>Math.max(1,G.level||1);
+const TUNE={h:.035,b:.010,c:.012,p:.04,hc:2.2,bc:1.4,cc:.65};
+/* nível efetivo: até a fase 4 = fase; depois sobe devagar (dados reais: salto grande 4->5 com a curva anterior) */
+const EL=()=>{const L=Math.max(1,G.level||1);return L<=4?L:4+(L-4)*.35};
 function DF(){const L=EL()-1;return{b:Math.min(TUNE.bc,1.03+TUNE.b*L),h:Math.min(TUNE.hc,1+TUNE.h*L),c:Math.max(TUNE.cc,1-TUNE.c*L)}}
 function spawn(t,x,y,o){
   const base={fighter:{hp:2,pts:100,spr:ES.fighter},ace:{hp:7,pts:600,spr:ES.ace},bomber:{hp:12,pts:900,spr:ES.bomber},dive:{hp:2,pts:150,spr:ES.dive},ground:{hp:3,pts:200,spr:ES.ground},mine:{hp:3,pts:60,spr:mineSpr()}}[t];
@@ -925,7 +926,7 @@ function killBoss(){
   for(let i=0;i<12;i++)later(i*.14,()=>explode(b.x+rand(-b.w/2,b.w/2),b.y+rand(-b.h/2,b.h/2),12+(i===11?18:0)));
   later(1.9,()=>{
     explode(b.x,b.y,40);enemies.forEach(e=>{if(!e.dead)killEnemy(e)});ebul.length=0;
-    addScore(2000+G.level*100,b.x,b.y,true);dropCoin(b.x,b.y,5+(G.evRisk?10:0));G.evRisk=false;G.bossBuff=1;G.bossKills++;{const st=save.stats;st.bk=st.bk||{};st.bk[b.type]=(st.bk[b.type]||0)+1}if(G.lives<=1){G.lives++;ftext(b.x,b.y-20,'+1 VIDA','#ff5a6e')}
+    addScore(2000+G.level*100,b.x,b.y,true);dropCoin(b.x,b.y,5+(G.evRisk?10:0));G.evRisk=false;G.bossBuff=1;G.bossKills++;{const st=save.stats;st.bk=st.bk||{};st.bk[b.type]=(st.bk[b.type]||0)+1}if(G.lives<G.maxLives){G.lives++;ftext(b.x,b.y-20,'+1 VIDA','#ff5a6e')}
     boss=null;completeStage(true);
   });
 }
