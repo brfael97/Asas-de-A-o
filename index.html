@@ -177,9 +177,9 @@ function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math
 const mem={};
 function sget(k,d){try{const v=localStorage.getItem('asas_'+k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}}
 function sset(k,v){mem[k]=v;try{localStorage.setItem('asas_'+k,JSON.stringify(v))}catch(e){}}
-const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),stats:sget('stats',{}),dbg:sget('dbg',{}),opt:sget('opt',{})};
-const VERSION='1.1.3',BUILD='04/11/2026';
-function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('stats',save.stats);sset('dbg',save.dbg);sset('opt',save.opt)}
+const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),stats:sget('stats',{}),dbg:sget('dbg',{}),opt:sget('opt',{}),tele:sget('tele',[])};
+const VERSION='1.2.0',BUILD='04/11/2026';
+function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('stats',save.stats);sset('dbg',save.dbg);sset('opt',save.opt);sset('tele',save.tele)}
 
 /* ---------- áudio 8 bits (Web Audio, sem ficheiros) ---------- */
 let ac=null,master=null,muted=sget('muted',false);
@@ -497,12 +497,12 @@ function mineSpr(){return ES.mine||(ES.mine=makeSpr(["...s","..kk",".kmm","skmh"
 const SPEC={convoy:{n:'COMBOIO INIMIGO',d:'Destrua o comboio: moedas extras!'},mines:{n:'CAMPO MINADO',d:'Minas explodem em balas. Passe pelas brechas!'},storm:{n:'TEMPESTADE',d:'Raios caem do céu. Fuja das marcas!'}};
 /* dificuldade progressiva: sobe a cada fase (sem seletor) */
 /* curva de dificuldade (por fase global L): h=vida inimiga, b=vel. das balas, c=cadência, p=poder do jogador por setor */
-const TUNE={h:.14,b:.028,c:.028,p:.05,hc:3,bc:1.6,cc:.5};
+const TUNE={h:.035,b:.010,c:.012,p:.06,hc:2.2,bc:1.4,cc:.65};
 const EL=()=>Math.max(1,G.level||1);
 function DF(){const L=EL()-1;return{b:Math.min(TUNE.bc,1.03+TUNE.b*L),h:Math.min(TUNE.hc,1+TUNE.h*L),c:Math.max(TUNE.cc,1-TUNE.c*L)}}
 function spawn(t,x,y,o){
-  const base={fighter:{hp:2,pts:100,spr:ES.fighter},ace:{hp:7,pts:600,spr:ES.ace},bomber:{hp:12,pts:900,spr:ES.bomber},dive:{hp:2,pts:150,spr:ES.dive},ground:{hp:3,pts:200,spr:ES.ground},mine:{hp:2,pts:60,spr:mineSpr()}}[t];
-  const sm=(t==='fighter'||t==='dive')?Math.floor(EL()/3):Math.floor(EL()/2),hp=Math.max(1,Math.round((base.hp+sm+(hasMod('armored')?1:0))*DF().h));
+  const base={fighter:{hp:2,pts:100,spr:ES.fighter},ace:{hp:7,pts:600,spr:ES.ace},bomber:{hp:12,pts:900,spr:ES.bomber},dive:{hp:2,pts:150,spr:ES.dive},ground:{hp:3,pts:200,spr:ES.ground},mine:{hp:3,pts:60,spr:mineSpr()}}[t];
+  const Ls=EL(),sm=(t==='fighter'||t==='dive')?(Ls<3?0:1+Math.floor((Ls-3)/4)):(Ls<2?0:1+Math.floor((Ls-2)/3)),hp=Math.max(1,Math.round((base.hp+sm+(hasMod('armored')?1:0))*DF().h));
   const e=Object.assign({t,x,y,x0:x,y0:y,vx:0,vy:40,hp,maxhp:hp,pts:base.pts,spr:base.spr,age:0,mv:'straight',sh:null,shT:rand(.4,1.3),cd:2.4,flash:0,tel:0,drop:false,dead:false,dir:1,sp:60,sa:0},o||{});
   if(e.cd>.5)e.cd*=.62*DF().c*Math.max(.6,1-EL()*.02);
   e.maxhp=e.hp;enemies.push(e);return e;
@@ -547,7 +547,7 @@ function drawEnemy(e){
 function killEnemy(e){
   e.dead=true;G.kills++;regKill();addScore(e.pts,e.x,e.y);explode(e.x,e.y,e.t==='bomber'?20:e.t==='ace'?14:9);
   if(e.drop||e.t==='bomber'||Math.random()<(hasMod('jackpot')?.1:.04))dropPow(e.x,e.y);
-  if(e.t==='mine'&&e.y>-4){for(let i=0;i<5;i++)ebullet(e.x,e.y,i*Math.PI*.4+.3,40,'dot')}
+  if(e.t==='mine'&&e.y>-4){const n=G.sector>=3?7:5,a=player?Math.atan2(player.y-e.y,player.x-e.x):Math.PI/2;for(let i=0;i<n;i++)ebullet(e.x,e.y,i*Math.PI*2/n+.3,44,'dot');for(const d of[-.22,.22])ebullet(e.x,e.y,a+d,52,'dot')}
   const cn=e.bonus||(e.t==='ace'||e.t==='bomber'?1:(e.t==='mine'?0:(Math.random()<.12?1:0)));if(cn)dropCoin(e.x,e.y,cn);
 }
 
@@ -564,12 +564,12 @@ const WV={
   rain(){for(let i=0;i<14;i++)later(i*.27,()=>spawn('fighter',rand(14,W-14),-10,{vy:78,sh:'down',cd:1.6}))},
   bomber(){const x=W/2+rand(-30,30);spawn('bomber',x,-22,{mv:'hold',vy:34,ty:52,holdT:8.5,sh:'ring8',cd:2.7,hp:12+Math.floor(G.level/2),drop:true});later(1.2,()=>{spawn('fighter',x-44,-10,{mv:'sine',vy:36,sh:'aim1',cd:2.6});spawn('fighter',x+44,-10,{mv:'sine',vy:36,sh:'aim1',cd:2.6,sa:3})})},
   convoy(){const x=rand(44,W-44);for(let i=0;i<5;i++)later(i*.8,()=>spawn('ground',x+Math.sin(i)*4,-10,{mv:'ground',sh:'ball',cd:3.4,hp:2+Math.floor(G.level/4),bonus:2,drop:i===4}));later(1.2,()=>{spawn('fighter',x-40,-10,{mv:'sine',vy:40,sh:'aim1',cd:2.6});spawn('fighter',x+40,-10,{mv:'sine',vy:40,sh:'aim1',cd:2.6,sa:3})})},
-  mines(){const g=Math.floor(rand(1,5));for(let r=0;r<2;r++)later(r*1.9,()=>{const gg=r?Math.max(0,Math.min(5,g+(Math.random()<.5?-1:1))):g;for(let i=0;i<8;i++){if(i>=gg&&i<=gg+2)continue;spawn('mine',14+i*22,-8,{mv:'ground'})}})},
+  mines(){const g=Math.floor(rand(1,5));for(let r=0;r<2;r++)later(r*1.9,()=>{const gg=r?Math.max(0,Math.min(5,g+(Math.random()<.5?-1:1))):g;for(let i=0;i<8;i++){if(i>=gg&&i<=gg+(G.sector>=3?1:2))continue;spawn('mine',14+i*22,-8,{mv:'ground'})}})},
   stormw(){const n=2+(G.level>8?1:0);for(let i=0;i<n;i++)lightning(rand(14,W-14),1.1+i*.25,18);lightning(player.x,1.5,16);if(Math.random()<.5)later(.5,()=>spawn('fighter',rand(20,W-20),-10,{vy:60,sh:'aim1',cd:2.2}))},
   ace(){spawn('ace',rand(50,W-50),-14,{mv:'hold',vy:46,ty:60,holdT:9,sh:'spiral',cd:.28,drop:true});later(1,()=>{spawn('fighter',30,-10,{vy:50,mv:'sine',sh:'aim3',cd:3});spawn('fighter',W-30,-10,{vy:50,mv:'sine',sh:'aim3',cd:3,sa:3})})}
 };
 function buildScript(){
-  if(G.special){const w={convoy:'convoy',mines:'mines',storm:'stormw'}[G.special],gap={convoy:5.2,mines:3.8,storm:2.8}[G.special],n=G.special==='convoy'?5:9;script=[];let t=2.4;for(let i=0;i<n;i++){script.push({t,w});if(G.special==='convoy'&&i===2)script.push({t:t+2.5,w:'v'});t+=gap}script.sort((a,b)=>a.t-b.t);return}
+  if(G.special){const w={convoy:'convoy',mines:'mines',storm:'stormw'}[G.special],gap={convoy:5.2,mines:3.3,storm:2.8}[G.special],n=G.special==='convoy'?5:9;script=[];let t=2.4;for(let i=0;i<n;i++){script.push({t,w});if(G.special==='convoy'&&i===2)script.push({t:t+2.5,w:'v'});t+=gap}script.sort((a,b)=>a.t-b.t);return}
   const L=G.level,pool=['v','line','cols','dive','pincer','rain'];if(L>=2)pool.push('boats');
   const n=11+Math.min(6,Math.floor(L/2));let t=2.0,last='';script=[];
   for(let i=0;i<n;i++){
@@ -649,7 +649,7 @@ function drawPlayer(){
 function hurt(){
   const p=player;if(p.inv>0||G.state!=='play'||save.dbg.god)return;
   if(G.time<pw.shield){pw.shield=0;p.inv=1.2;burst(p.x,p.y,['#5ce1ff','#fff'],16,70);rings.push({x:p.x,y:p.y,r:3,mr:22,life:.3,max:.3,c:'#5ce1ff'});sfx('phase');updatePows();return}
-  G.lives--;G.lostLife=true;p.inv=1.6;G.combo=0;G.comboT=0;G.tier=0;
+  G.lives--;G.lostLife=true;G.stHits=(G.stHits||0)+1;p.inv=1.6;G.combo=0;G.comboT=0;G.tier=0;
   explode(p.x,p.y,12);sfx('hurt');G.shake=6;ebul.length=0;
   if(G.lives<=0)gameOver('abatido');
 }
@@ -1046,7 +1046,7 @@ function startLevel(){
   if(th!==theme){theme=th;buildEnemySprites(theme)}
   if(sis===1){mods=[];if(G.sector>1||G.extraMod){const ids=G.sector<=2?['wind','armored']:Object.keys(MODS),n=Math.min(3,(G.sector>=5?2:G.sector>1?1:0)+(G.extraMod?1:0));G.extraMod=false;while(mods.length<n){const m=pick(ids);if(!mods.includes(m))mods.push(m)}}}
   {const sh=G.level%4===0?pw.shield:0;pw={shrink:0,rapid:0,shield:sh,power:0,slow:0}}
-  hazards=[];enemies=[];ebul=[];pbul=[];missiles=[];drops=[];timers=[];warns=[];boss=null;G.stageT=0;G.stageDone=false;G.lostLife=false;G.state='play';G.bossWarn=0;player.inv=1.5;
+  G.stHits=0;hazards=[];enemies=[];ebul=[];pbul=[];missiles=[];drops=[];timers=[];warns=[];boss=null;G.stageT=0;G.stageDone=false;G.lostLife=false;G.state='play';G.bossWarn=0;player.inv=1.5;
   if(G.level%4===0){script=[];G.bossWarn=3;banner('ATENÇÃO','CHEFE A CAMINHO',3,true);sfx('warn');Music.setBoss(true)}
   else{
     buildScript();Music.setBoss(false);
@@ -1073,14 +1073,14 @@ function showEvent(){
   updHud();
 }
 function completeStage(wasBoss){
-  if(G.stageDone)return;G.stageDone=true;G.state='clear';ebul.length=0;
+  if(G.stageDone)return;G.stageDone=true;G.state='clear';ebul.length=0;teleLog('ok');
   const bonus=G.lostLife?0:300+G.level*20;if(bonus)addScore(bonus,null,null,true);
   const sp=!wasBoss&&G.special;if(sp)dropCoin(player.x,player.y-12,6+Math.floor(G.level/2));
   banner(wasBoss?'CHEFE ABATIDO!':sp?'ESPECIAL COMPLETA!':'FASE COMPLETA',sp?'+'+(10+G.level)+' moedas · cartas melhores':bonus?'Impecável! +'+bonus:'',2.2);sfx('pow');
   later(2.5,()=>{if(G.state!=='clear')return;cardsBoost=!!wasBoss||!!sp;showCards(!!wasBoss)});
 }
 function gameOver(cause){
-  if(G.state==='over')return;G.state='over';recStats(cause);sset('run',null);Music.setBoss(false);player.dead=true;explode(player.x,player.y,24);
+  if(G.state==='over')return;G.state='over';teleLog('morreu');recStats(cause);sset('run',null);Music.setBoss(false);player.dead=true;explode(player.x,player.y,24);
   const earned=G.coins+Math.floor(G.score/1500),rec=G.score>save.best;if(rec)save.best=G.score;save.coins+=earned;persist();
   const sis=(G.level-1)%4+1,row=(a,b)=>'<div class="stat"><span>'+a+'</span><b>'+b+'</b></div>';
   const ups=UPG.filter(c=>lv(c.id)).map(c=>c.name+' '+lv(c.id)).join(' · ')||'Nenhum';
@@ -1286,6 +1286,7 @@ function recStats(cause){
   s.deaths=s.deaths||{};const k=boss?boss.name:(G.special?'Fase especial':'Fase normal '+sis);s.deaths[k]=(s.deaths[k]||0)+1;
   persist();
 }
+function teleLog(res){const t=save.tele;t.push({L:G.level,sp:G.special||'',h:G.stHits||0,s:Math.round(G.stageT||0),r:res,pl:G.plane,lv:G.lives});if(t.length>120)t.splice(0,t.length-120);persist()}
 function saveRun(){
   if(!player||G.state!=='play')return;
   const g={};['score','coins','lives','maxLives','level','kills','bossKills','graze','plane','bossBuff','extraMod','picks'].forEach(k=>g[k]=G[k]);
@@ -1364,7 +1365,7 @@ function optHtml(){
     const tg=(k,n)=>'<button class="btn sec sm tg'+(d[k]?' on':'')+'" data-d="'+k+'">'+n+'</button>';
     h+='<h3 style="color:var(--red)">MODO DEBUG</h3><div class="row">'+tg('fps','FPS')+tg('hit','HITBOX')+tg('god','INVENCÍVEL')+'</div>'
      +'<div class="row" style="margin-top:6px"><button class="btn sec sm" id="oMinus">-</button><span style="align-self:center;font-size:.62em">FASE INICIAL '+(d.start||1)+'</span><button class="btn sec sm" id="oPlus">+</button></div>'
-     +'<div class="row" style="margin-top:6px"><button class="btn sec sm" id="oCoins">+500¢</button><button class="btn sec sm" id="oAll">TODOS OS AVIÕES</button><button class="btn sec sm" id="oOff">SAIR DO DEBUG</button></div>';
+     +'<div class="row" style="margin-top:6px"><button class="btn sec sm" id="oCoins">+500¢</button><button class="btn sec sm" id="oAll">TODOS OS AVIÕES</button><button class="btn sec sm" id="oTele">COPIAR TELEMETRIA</button><button class="btn sec sm" id="oOff">SAIR DO DEBUG</button></div>';
   }
   return h+'<p style="margin-top:18px;color:var(--dim);font-size:.5em;text-align:center">Asas de Aço · versão '+VERSION+' · atualizado em '+BUILD+'<br>Seus dados ficam guardados neste aparelho.</p></div>';
 }
@@ -1377,10 +1378,11 @@ function bindOpt(){
   on('oPlus',()=>{save.dbg.start=Math.min(40,(save.dbg.start||1)+1);persist();reopenOpt()});
   on('oCoins',()=>{save.coins+=500;persist();renderMenu();msg('+500¢ (total '+save.coins+')')});
   on('oAll',()=>{save.unlocked=PLANE_IDS.slice();persist();renderMenu();msg('Todos os aviões liberados')});
+  on('oTele',()=>{const t=save.tele,by={};t.forEach(x=>{const k=x.L;by[k]=by[k]||{n:0,h:0,s:0,m:0};by[k].n++;by[k].h+=x.h;by[k].s+=x.s;if(x.r!=='ok')by[k].m++});const txt='Asas v'+VERSION+' telemetria\nfase;vezes;acertos/vez;seg/vez;mortes\n'+Object.keys(by).sort((a,b)=>a-b).map(k=>k+';'+by[k].n+';'+(by[k].h/by[k].n).toFixed(1)+';'+Math.round(by[k].s/by[k].n)+';'+by[k].m).join('\n');try{navigator.clipboard.writeText(txt);msg('Telemetria copiada ('+t.length+' registros)')}catch(e){prompt('Copie:',txt)}});
   on('oOff',()=>{save.dbg={};persist();sfx('ui');reopenOpt()});
   on('oExp',()=>{const j=JSON.stringify({save,run:getRun()});try{navigator.clipboard.writeText(j);msg('Save copiado!')}catch(e){prompt('Copie o save:',j)}});
-  on('oImp',()=>{const j=prompt('Cole o save exportado:');if(!j)return;try{const o=JSON.parse(j).save;['coins','best','unlocked','sel','stats','opt'].forEach(k=>{if(o[k]!==undefined)save[k]=o[k]});persist();renderMenu();msg('Save importado!')}catch(e){msg('Save inválido')}});
-  on('oReset',()=>askConfirm('APAGAR PROGRESSO','Isso apaga <b>moedas, aviões, recorde e estatísticas</b>.','CONTINUAR',()=>setTimeout(()=>askConfirm('TEM CERTEZA?','Última chance. Esta ação <b style="color:var(--red)">não pode ser desfeita</b>.','APAGAR TUDO',()=>{Object.assign(save,{coins:0,best:0,unlocked:['spit'],sel:'spit',stats:{},opt:{},dbg:{}});persist();sset('run',null);selMenu='spit';renderMenu();reopenOpt();msg('Progresso apagado.')},true),50),true));
+  on('oImp',()=>{const j=prompt('Cole o save exportado:');if(!j)return;try{const o=JSON.parse(j).save;['coins','best','unlocked','sel','stats','opt','tele'].forEach(k=>{if(o[k]!==undefined)save[k]=o[k]});persist();renderMenu();msg('Save importado!')}catch(e){msg('Save inválido')}});
+  on('oReset',()=>askConfirm('APAGAR PROGRESSO','Isso apaga <b>moedas, aviões, recorde e estatísticas</b>.','CONTINUAR',()=>setTimeout(()=>askConfirm('TEM CERTEZA?','Última chance. Esta ação <b style="color:var(--red)">não pode ser desfeita</b>.','APAGAR TUDO',()=>{Object.assign(save,{coins:0,best:0,unlocked:['spit'],sel:'spit',stats:{},opt:{},dbg:{},tele:[]});persist();sset('run',null);selMenu='spit';renderMenu();reopenOpt();msg('Progresso apagado.')},true),50),true));
 }
 /* entrada: toque abre as opções; segurar 5s ativa o modo debug */
 (()=>{const b=$('btnOpt');let t=null,long=false;
