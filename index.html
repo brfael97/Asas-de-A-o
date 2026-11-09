@@ -180,7 +180,7 @@ const mem={};
 function sget(k,d){try{const v=localStorage.getItem('asas_'+k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}}
 function sset(k,v){mem[k]=v;try{localStorage.setItem('asas_'+k,JSON.stringify(v))}catch(e){}}
 const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),stats:sget('stats',{}),dbg:sget('dbg',{}),opt:sget('opt',{}),tele:sget('tele',[])};
-const VERSION='1.3.1',BUILD='09/11/2026';
+const VERSION='1.3.2',BUILD='09/11/2026';
 function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('stats',save.stats);sset('dbg',save.dbg);sset('opt',save.opt);sset('tele',save.tele)}
 
 /* ---------- áudio 8 bits (Web Audio, sem ficheiros) ---------- */
@@ -364,12 +364,12 @@ function drawCoin(x,y,spin){
 /* ---------- aviões jogáveis (hangar) ---------- */
 const PLANES={
   spit:{name:'SPITFIRE',cost:0,speed:1.1,lives:3,fire:1,dmg:1,hit:1.6,desc:'<b>Ágil.</b> +10% velocidade. Bom para aprender.'},
-  hurr:{name:'HURRICANE',cost:480,speed:.95,lives:4,fire:1,dmg:1,hit:1.8,desc:'<b>Robusto.</b> Começa com 4 vidas.'},
-  p38:{name:'P-38',cost:720,speed:1,lives:3,fire:.9,dmg:1.25,hit:2,desc:'<b>Canhão central.</b> Tiro extra pesado, +25% dano.'},
-  zero:{name:'ZERO',cost:240,speed:1.2,lives:2,fire:1.25,dmg:1,hit:1.2,desc:'<b>Dash.</b> Botão: esquiva rápida e invencível. Só 2 vidas.'},
-  bf109:{name:'BF 109',cost:600,speed:1.15,lives:3,fire:1,dmg:1,hit:1.5,desc:'<b>Predador.</b> +50% de dano nos inimigos a curta distância.'},
-  p51:{name:'MUSTANG',cost:360,speed:1.05,lives:3,fire:1.1,dmg:1,hit:1.6,desc:'<b>Tiro guiado.</b> Os tiros da metralhadora curvam em direção aos inimigos.'},
-  corsair:{name:'CORSAIR',cost:840,speed:1,lives:3,fire:1,dmg:1,hit:1.3,desc:'<b>Asa dobrável.</b> Começa com Mísseis nv 1 e tem hitbox menor.'}
+  hurr:{name:'HURRICANE',cost:720,speed:.95,lives:4,fire:1,dmg:1,hit:1.8,desc:'<b>Robusto.</b> Começa com 4 vidas.'},
+  p38:{name:'P-38',cost:1080,speed:1,lives:3,fire:.9,dmg:1.25,hit:2,desc:'<b>Canhão central.</b> Tiro extra pesado, +25% dano.'},
+  zero:{name:'ZERO',cost:360,speed:1.2,lives:2,fire:1.25,dmg:1,hit:1.2,desc:'<b>Dash.</b> Botão: esquiva rápida e invencível. Só 2 vidas.'},
+  bf109:{name:'BF 109',cost:900,speed:1.15,lives:3,fire:1,dmg:1,hit:1.5,desc:'<b>Predador.</b> +50% de dano nos inimigos a curta distância.'},
+  p51:{name:'MUSTANG',cost:540,speed:1.05,lives:3,fire:1.1,dmg:1,hit:1.6,desc:'<b>Tiro guiado.</b> Os tiros da metralhadora curvam em direção aos inimigos.'},
+  corsair:{name:'CORSAIR',cost:1260,speed:1,lives:3,fire:1,dmg:1,hit:1.3,desc:'<b>Asa dobrável.</b> Começa com Mísseis nv 1 e tem hitbox menor.'}
 };
 const PLANE_IDS=['spit','hurr','p38','zero','bf109','p51','corsair'];
 const THEMES={
@@ -503,10 +503,11 @@ function rockSpr(){if(ES.rock)return ES.rock;const c=document.createElement('can
 const SPEC={convoy:{n:'COMBOIO INIMIGO',d:'Destrua o comboio: moedas extras!'},mines:{n:'CAMPO MINADO',d:'Minas não morrem a tiro: armam quando você chega perto. Afaste-se!'},canyon:{n:'DESFILADEIRO',d:'Paredões de rocha: voe pela brecha sem encostar!'},storm:{n:'TEMPESTADE',d:'Raios caem do céu. Fuja das marcas!'}};
 /* dificuldade progressiva: sobe a cada fase (sem seletor) */
 /* curva de dificuldade (por fase global L): h=vida inimiga, b=vel. das balas, c=cadência, p=poder do jogador por setor */
-const TUNE={h:.031,b:.009,c:.011,p:.045,hc:2.0,bc:1.3,cc:.7};
+const TUNE={h:.033,b:.0095,c:.0115,p:.04,hc:2.1,bc:1.35,cc:.675};
 /* nível efetivo: até a fase 4 = fase; depois sobe devagar (dados reais: salto grande 4->5 com a curva anterior) */
 const EL=()=>{const L=Math.max(1,G.level||1);return L<=4?L:4+(L-4)*.35};
-function DF(){const L=EL()-1;return{b:Math.min(TUNE.bc,1.03+TUNE.b*L),h:Math.min(TUNE.hc,1+TUNE.h*L),c:Math.max(TUNE.cc,1-TUNE.c*L)}}
+function pickF(){return 1+.03*Math.min(24,Math.max(0,(G.picks||0)-3))}
+function DF(){const L=EL()-1;return{b:Math.min(TUNE.bc,1.03+TUNE.b*L),h:Math.min(TUNE.hc,1+TUNE.h*L)*pickF(),c:Math.max(TUNE.cc,1-TUNE.c*L)}}
 function spawn(t,x,y,o){
   const base={fighter:{hp:2,pts:100,spr:ES.fighter},ace:{hp:7,pts:600,spr:ES.ace},bomber:{hp:12,pts:900,spr:ES.bomber},dive:{hp:2,pts:150,spr:ES.dive},ground:{hp:3,pts:200,spr:ES.ground},mine:{hp:3,pts:60,spr:mineSpr()}}[t];
   const Ls=EL(),sm=(t==='fighter'||t==='dive')?(Ls<3?0:1+Math.floor((Ls-3)/4)):(Ls<2?0:1+Math.floor((Ls-2)/3)),hp=Math.max(1,Math.round((base.hp+sm+(hasMod('armored')?1:0))*DF().h));
@@ -542,7 +543,7 @@ function updEnemy(e,dt){
       if(!e.dash){e.y+=e.vy*dt;if(e.y>=e.ty){e.tel+=dt;if(e.tel>.55){e.dash=true;const a=Math.atan2(player.y-e.y,player.x-e.x);e.vx=Math.cos(a)*140;e.vy=Math.sin(a)*140}}}
       else{e.x+=e.vx*dt;e.y+=e.vy*dt}break;
   }
-  if(e.t==='mine'&&!e.rock&&player&&G.state==='play'){const d=Math.hypot(e.x-player.x,e.y-player.y);if(!e.arm&&d<27)e.arm=.85;if(e.arm>0){e.arm-=dt;e.tel=Math.max(.01,e.arm);if(e.arm<=0)mineBurst(e)}}
+  if(e.t==='mine'&&!e.rock&&player&&G.state==='play'){const d=Math.hypot(e.x-player.x,e.y-player.y);if(!e.arm&&d<29)e.arm=.85;if(e.arm>0){e.arm-=dt;e.tel=Math.max(.01,e.arm);if(e.arm<=0)mineBurst(e)}}
   if(e.sh&&e.y>4&&e.y<H-30&&!(e.mv==='dive')){
     e.shT-=dt;if(e.sh==='ring8'&&e.shT<.4&&e.shT>0)e.tel=.4;
     if(e.shT<=0){efire(e);e.shT=e.cd*(e.cd>.5?rand(.85,1.15):1);e.tel=0}
@@ -559,7 +560,7 @@ function drawEnemy(e){
 function killEnemy(e){
   e.dead=true;G.kills++;regKill();addScore(e.pts,e.x,e.y);explode(e.x,e.y,e.t==='bomber'?20:e.t==='ace'?14:9);
   if(e.drop||e.t==='bomber'||Math.random()<(hasMod('jackpot')?.1:.04))dropPow(e.x,e.y);
-    const cn=e.bonus||(e.t==='ace'||e.t==='bomber'?1:(e.t==='mine'?0:(Math.random()<.07?1:0)));if(cn)dropCoin(e.x,e.y,cn);
+    const cn=e.bonus||(e.t==='ace'||e.t==='bomber'?1:(e.t==='mine'?0:(Math.random()<.03?1:0)));if(cn)dropCoin(e.x,e.y,cn);
 }
 
 /* ---------- ondas (o "roteiro" do cenário) ---------- */
@@ -571,19 +572,19 @@ const WV={
   cols(){for(let i=0;i<5;i++)later(i*.34,()=>{spawn('fighter',26,-10,{vy:86,sh:'down',cd:2.4});spawn('fighter',W-26,-10,{vy:86,sh:'down',cd:2.4});if(G.level>=3)spawn('fighter',W/2,-10,{vy:86})})},
   dive(){for(let i=0;i<5;i++){const x=18+i*36+rand(-6,6);warnAt(x,10,.8);later(.8,()=>spawn('dive',x,-10,{mv:'dive',vy:70,ty:rand(55,115)}))}},
   pincer(){warnAt(7,50);warnAt(W-7,50);for(let i=0;i<5;i++)later(.9+i*.45,()=>{spawn('fighter',-10,50,{mv:'swoop',dir:1,sh:'aim1',cd:2.4});spawn('fighter',W+10,50,{mv:'swoop',dir:-1,sh:'aim1',cd:2.4})})},
-  boats(){for(let i=0;i<3;i++){const x=rand(24,W-24);later(i*.9,()=>spawn('ground',x,-10,{mv:'ground',sh:'ball',cd:3.2,hp:3+Math.floor(G.level/4)}))}},
+  boats(){const sl=[30,90,150].sort(()=>Math.random()-.5);for(let i=0;i<3;i++){const x=clamp(sl[i]+rand(-16,16),16,W-16),y=-10-rand(0,70);spawn('ground',x,y,{mv:'ground',sh:'ball',cd:rand(2.4,3.6),hp:3+Math.floor(G.level/4)})}},
   rain(){for(let i=0;i<14;i++)later(i*.27,()=>spawn('fighter',rand(14,W-14),-10,{vy:78,sh:'down',cd:1.6}))},
   bomber(){const x=W/2+rand(-30,30);spawn('bomber',x,-22,{mv:'hold',vy:34,ty:52,holdT:8.5,sh:'ring8',cd:2.7,hp:12+Math.floor(G.level/2),drop:true});later(1.2,()=>{spawn('fighter',x-44,-10,{mv:'sine',vy:36,sh:'aim1',cd:2.6});spawn('fighter',x+44,-10,{mv:'sine',vy:36,sh:'aim1',cd:2.6,sa:3})})},
   convoy(){const x=rand(44,W-44);for(let i=0;i<5;i++)later(i*.8,()=>spawn('ground',x+Math.sin(i)*4,-10,{mv:'ground',sh:'ball',cd:3.4,hp:2+Math.floor(G.level/4),bonus:i%2===0?1:0,drop:i===4}));later(1.2,()=>{spawn('fighter',x-40,-10,{mv:'sine',vy:40,sh:'aim1',cd:2.6});spawn('fighter',x+40,-10,{mv:'sine',vy:40,sh:'aim1',cd:2.6,sa:3})})},
-  canyon(){let g=Math.floor(rand(1,4)),d=Math.random()<.5?-1:1;const gw=G.level>=14?3:4,rows=11;for(let r=0;r<rows;r++)later(r*.62,()=>{if(Math.random()<.78)g+=d;if(g<0||g>9-gw){d=-d;g=clamp(g,0,9-gw)}else if(Math.random()<.15)d=-d;for(let i=0;i<9;i++){if(i>=g&&i<g+gw)continue;spawn('mine',10+i*20,-10,{mv:'ground',rock:true,spr:rockSpr()})}})},
-  mines(){for(let r=0;r<2;r++)later(r*1.65,()=>{if(G.mg===undefined){G.mg=Math.floor(rand(0,6));G.md=Math.random()<.5?-1:1}
+  canyon(){let g=Math.floor(rand(1,4)),d=Math.random()<.5?-1:1;const gw=G.level>=26?2:3,rows=12;for(let r=0;r<rows;r++)later(r*.5,()=>{if(r%4===3){g+=d*2}else if(Math.random()<.9)g+=d;if(g<0||g>9-gw){d=-d;g=clamp(g,0,9-gw)}else if(Math.random()<.15)d=-d;for(let i=0;i<9;i++){if(i>=g&&i<g+gw)continue;spawn('mine',10+i*20,-10,{mv:'ground',rock:true,spr:rockSpr()})}})},
+  mines(){for(let r=0;r<2;r++)later(r*1.4,()=>{if(G.mg===undefined){G.mg=Math.floor(rand(0,6));G.md=Math.random()<.5?-1:1}
     const st=2+(Math.random()<.4?1:0);let ng=G.mg+G.md*st;if(ng<0||ng>5){G.md=-G.md;ng=G.mg+G.md*st}ng=clamp(ng,0,5);if(ng===G.mg){G.md=-G.md;ng=clamp(G.mg+G.md*2,0,5)}if(Math.random()<.2)G.md=-G.md;G.mg=ng;const gg=ng;
     for(let i=0;i<8;i++){if(i>=gg&&i<=gg+2)continue;spawn('mine',14+i*22,-8,{mv:'ground'})}})},
   stormw(){const n=3+(G.level>10?1:0);for(let i=0;i<n;i++)lightning(rand(14,W-14),.95+i*.2,18);lightning(player.x,1.25,16);if(G.level>6)lightning(clamp(player.x+rand(-34,34),12,W-12),1.5,16);if(Math.random()<.7)later(.5,()=>spawn('fighter',rand(20,W-20),-10,{vy:60,sh:'aim1',cd:2.2}))},
   ace(){spawn('ace',rand(50,W-50),-14,{mv:'hold',vy:46,ty:60,holdT:9,sh:'spiral',cd:.28,drop:true});later(1,()=>{spawn('fighter',30,-10,{vy:50,mv:'sine',sh:'aim3',cd:3});spawn('fighter',W-30,-10,{vy:50,mv:'sine',sh:'aim3',cd:3,sa:3})})}
 };
 function buildScript(){
-  if(G.special){const w={convoy:'convoy',mines:'mines',storm:'stormw',canyon:'canyon'}[G.special],gap={convoy:5.2,mines:3.0,storm:2.4,canyon:10}[G.special],n=G.special==='convoy'?5:G.special==='canyon'?3:9;script=[];G.mg=undefined;let t=2.4;for(let i=0;i<n;i++){script.push({t,w});if(G.special==='convoy'&&i===2)script.push({t:t+2.5,w:'v'});t+=gap}script.sort((a,b)=>a.t-b.t);return}
+  if(G.special){const w={convoy:'convoy',mines:'mines',storm:'stormw',canyon:'canyon'}[G.special],gap={convoy:5.2,mines:2.7,storm:2.4,canyon:8.2}[G.special],n=G.special==='convoy'?5:G.special==='canyon'?4:10;script=[];G.mg=undefined;let t=2.4;for(let i=0;i<n;i++){script.push({t,w});if(G.special==='convoy'&&i===2)script.push({t:t+2.5,w:'v'});t+=gap}script.sort((a,b)=>a.t-b.t);return}
   const L=G.level,pool=['v','line','cols','dive','pincer','rain'];if(L>=2)pool.push('boats');
   const n=11+Math.min(6,Math.floor(L/2));let t=2.0,last='';script=[];
   for(let i=0;i<n;i++){
@@ -826,13 +827,13 @@ function damageEnemy(e,d){
 const BOSSES={
   fort:{name:'FORTALEZA VOADORA',col:['#5a6878','#8a9aac'],w:58,h:36,ty:70,hw:34,hpm:1,pods:[[-22,5],[22,5]],sp:[34,44,56],hint:'Destrua as turbinas para deixá-lo mais lento',p2:['FASE 2','Tiros mais densos e anéis'],p3:['FASE FINAL','Espiral e kamikazes'],pk:['TURBINA DESTRUÍDA!','AS DUAS TURBINAS CAÍRAM!']},
   panzer:{name:'PANZER COLOSSO',col:['#7a6a3a','#b89c5a'],w:58,h:40,ty:78,hw:34,hpm:1.1,pods:[[-25,3],[25,3]],sp:[22,30,40],hint:'Destrua os canhões laterais para deixá-lo mais lento',p2:['FASE 2','Rajadas em leque'],p3:['FASE FINAL','Chuva de foguetes'],pk:['CANHÃO DESTRUÍDO!','OS DOIS CANHÕES CAÍRAM!']},
-  zeppelin:{name:'ZEPPELIN DE FERRO',col:['#a9b9cf','#e6eef8'],w:40,h:84,ty:88,hw:32,hpm:1.3,pods:[[-22,12],[22,12]],sp:[14,18,24],hint:'Destrua as hélices para deixá-lo mais lento',p2:['FASE 2','Esquadrão de caças'],p3:['FASE FINAL','Bombardeio total'],pk:['HÉLICE DESTRUÍDA!','AS DUAS HÉLICES CAÍRAM!']},
+  zeppelin:{name:'ZEPPELIN DE FERRO',col:['#d2c391','#fbf3d2'],w:44,h:88,ty:88,hw:32,hpm:1.3,pods:[[-22,12],[22,12]],sp:[14,18,24],hint:'Destrua as hélices para deixá-lo mais lento',p2:['FASE 2','Esquadrão de caças'],p3:['FASE FINAL','Bombardeio total'],pk:['HÉLICE DESTRUÍDA!','AS DUAS HÉLICES CAÍRAM!']},
   storm:{name:'TEMPESTADE NEGRA',col:['#262b3c','#5a6488'],w:58,h:36,ty:70,hw:34,hpm:1.2,pods:[[-22,5],[22,5]],sp:[38,50,62],hint:'Raios caem onde há marca. Destrua as turbinas!',p2:['FASE 2','Parede de raios — ache a brecha'],p3:['FASE FINAL','Apagão e chuva de raios'],pk:['TURBINA DESTRUÍDA!','AS DUAS TURBINAS CAÍRAM!']},
-  battleship:{name:'ENCOURAÇADO',col:['#4f6078','#98adc8'],w:36,h:84,ty:84,hw:30,hpm:1.25,pods:[[-24,14],[24,14]],sp:[20,26,34],hint:'Destrua as torres laterais para deixá-lo mais lento',p2:['FASE 2','Bombardeio em cortina'],p3:['FASE FINAL','Salva total e kamikazes'],pk:['TORRE DESTRUÍDA!','AS DUAS TORRES CAÍRAM!']}
+  battleship:{name:'ENCOURAÇADO',col:['#4f6078','#98adc8'],w:44,h:90,ty:86,hw:32,hpm:1.25,pods:[[-25,14],[25,14]],sp:[20,26,34],hint:'Destrua as torres laterais para deixá-lo mais lento',p2:['FASE 2','Bombardeio em cortina'],p3:['FASE FINAL','Salva total e kamikazes'],pk:['TORRE DESTRUÍDA!','AS DUAS TORRES CAÍRAM!']}
 };
 const BOSS_ORDER=['fort','panzer','zeppelin','storm','battleship'];
 function spawnBoss(){
-  const sec=G.sector,type=BOSS_ORDER[(sec-1)%BOSS_ORDER.length],D=BOSSES[type],hp=Math.round((80+34*(sec-1)+G.level*2)*5*D.hpm*Math.pow(DF().h,.6)*(G.bossBuff||1)),ph=26+sec*6;
+  const sec=G.sector,type=BOSS_ORDER[(sec-1)%BOSS_ORDER.length],D=BOSSES[type],hp=Math.round((80+34*(sec-1)+G.level*2)*5*D.hpm*(1+.4/sec)*Math.pow(DF().h,.6)*(G.bossBuff||1)),ph=26+sec*6;
   boss={type,D,x:W/2,y:-50,ty:D.ty,w:D.w,h:D.h,hp,maxhp:hp,stage:1,age:0,dir:1,atkT:2.2,ringT:6,tel:0,diveT:7,zapT:3,flyT:5,flash:0,enter:true,dying:false,
     pods:D.pods.map(o=>({ox:o[0],oy:o[1],hp:ph,maxhp:ph,alive:true,rt:0,flash:0,ft:rand(1,2.2)})),name:D.name,col:D.col};
   Music.setBoss(true);
@@ -924,7 +925,7 @@ function updBoss(dt){
     if(!p.alive){if(Math.random()<.25)burst(b.x+p.ox,b.y+p.oy,['#555','#ff9a3c'],1,20);continue}
     p.ft-=dt;if(p.ft<=0)podFire(b,p);
   }
-  bossAttack(b,sdt);
+  bossAttack(b,dt*1.2);
 }
 function damageBoss(d,crit){
   const b=boss;if(!b||b.enter||b.dying)return;
@@ -936,14 +937,14 @@ function damageBoss(d,crit){
 function bossBody(x,y){
   const b=boss,dx=Math.abs(x-b.x),dy=y-b.y;
   if(b.type==='panzer')return(dx<17&&Math.abs(dy)<b.h/2)||(dx<b.w/2&&dy>-18&&dy<4);
-  if(b.type==='zeppelin')return dx<16&&Math.abs(dy)<b.h/2;
-  if(b.type==='battleship')return dx<17&&Math.abs(dy)<b.h/2;
+  if(b.type==='zeppelin')return dx<17&&Math.abs(dy)<b.h/2;
+  if(b.type==='battleship')return dx<19&&Math.abs(dy)<b.h/2;
   return(dx<14&&Math.abs(dy)<b.h/2+2)||(dx<b.w/2&&dy>-6&&dy<9);
 }
 function hitPods(x,y,dmg){
   for(const p of boss.pods){if(!p.alive)continue;const px=boss.x+p.ox,py=boss.y+p.oy;
     if(Math.abs(x-px)<6&&y>py-11&&y<py+12){p.hp-=dmg;p.flash=.08;sfx('hit');
-      if(p.hp<=0){p.alive=false;p.rt=0;explode(px,py,12);addScore(300,px,py);dropPow(px,py);dropCoin(px,py,1);banner(podsUp()?boss.D.pk[0]:boss.D.pk[1],podsUp()?'O chefe ficou mais lento':'Chefe bem mais lento',1.4)}
+      if(p.hp<=0){p.alive=false;p.rt=0;explode(px,py,12);addScore(300,px,py);dropPow(px,py);banner(podsUp()?boss.D.pk[0]:boss.D.pk[1],podsUp()?'O chefe ficou mais lento':'Chefe bem mais lento',1.4)}
       return true}}
   return false;
 }
@@ -952,7 +953,7 @@ function killBoss(){
   for(let i=0;i<12;i++)later(i*.14,()=>explode(b.x+rand(-b.w/2,b.w/2),b.y+rand(-b.h/2,b.h/2),12+(i===11?18:0)));
   later(1.9,()=>{
     explode(b.x,b.y,40);enemies.forEach(e=>{if(!e.dead)killEnemy(e)});ebul.length=0;
-    addScore(2000+G.level*100,b.x,b.y,true);dropCoin(b.x,b.y,4+(G.evRisk?8:0));G.evRisk=false;G.bossBuff=1;G.bossKills++;{const st=save.stats;st.bk=st.bk||{};st.bk[b.type]=(st.bk[b.type]||0)+1}if(G.lives<G.maxLives){G.lives++;ftext(b.x,b.y-20,'+1 VIDA','#ff5a6e')}
+    addScore(2000+G.level*100,b.x,b.y,true);dropCoin(b.x,b.y,3+(G.evRisk?6:0));G.evRisk=false;G.bossBuff=1;G.bossKills++;{const st=save.stats;st.bk=st.bk||{};st.bk[b.type]=(st.bk[b.type]||0)+1}if(G.lives<G.maxLives){G.lives++;ftext(b.x,b.y-20,'+1 VIDA','#ff5a6e')}
     boss=null;completeStage(true);
   });
 }
@@ -979,53 +980,48 @@ function tankBossCv(c1,c2){
   return c;
 }
 function zepBossCv(c1,c2){
-  const W=64,H=96,cx=32,c=document.createElement('canvas');c.width=W,c.height=H;const g=c.getContext('2d'),R=(x,y,w,h,f)=>{g.fillStyle=f;g.fillRect(x,y,w,h)};
-  const dk=shade(c1,.42),md=shade(c1,.72),RED='#c8323e',y0=12,y1=88,mid=(y0+y1)/2,half=(y1-y0)/2,HW=14;
-  const hwAt=y=>{const t=(y-mid)/half;return Math.round(HW*Math.pow(Math.max(0,1-Math.pow(Math.abs(t),2.2)),.5))};
-  // aletas traseiras inclinadas para trás (topo) + aleta vertical central
-  for(const sg of[-1,1]){for(let y=6;y<=28;y++){const xm=y<=22?HW-1+Math.round((y-6)/16*9):22-Math.round((y-22)/6*9);for(let x=HW-3;x<=xm;x++){const e=x===xm||y===6||y===28;R(cx+sg*x-(sg<0?0:0),y,1,1,e?dk:(y<10?c2:md))}}R(cx+sg*(HW+8),20,1,3,RED)}
-  R(cx-2,0,5,30,dk);R(cx-1,1,3,28,md);R(cx-1,1,1,28,c2);R(cx-1,0,3,3,RED);
-  // suportes dos motores
-  for(const sg of[-1,1]){const x0=sg<0?cx-21:cx+HW-2;R(x0,57,9,2,dk);R(x0,57,9,1,md);R(x0,63,9,2,dk);R(cx+sg*21-1,56,3,10,dk)}
-  // casco com iluminação cilíndrica (4 tons)
-  for(let y=y0;y<=y1;y++){const hw=hwAt(y);for(let dx=-hw;dx<=hw;dx++){const e=Math.abs(dx)===hw&&hw>2,t=(dx+hw)/(2*hw+.001);R(cx+dx,y,1,1,e?dk:(t<.18?md:(t<.36?'#f1f5fa':(t<.62?c2:(t<.82?c1:md)))))}}
-  // anéis curvos (dão volume)
-  for(let ry=y0+8;ry<y1-4;ry+=10){const hw=hwAt(ry);for(let dx=-hw+1;dx<hw;dx++){const yy=ry+Math.round(dx*dx/(hw*3.2));R(cx+dx,yy,1,1,dk);R(cx+dx,yy+1,1,1,md)}}
-  // faixas vermelhas curvas
-  for(const f of[.34,.64]){const ry=Math.round(y0+(y1-y0)*f),hw=hwAt(ry);for(let dx=-hw+1;dx<hw;dx++){const yy=ry+Math.round(dx*dx/(hw*3.2));R(cx+dx,yy,1,2,RED);R(cx+dx,yy,1,1,'#ff7580')}}
-  // passarela dorsal
-  R(cx-1,y0+3,3,y1-y0-6,dk);R(cx,y0+3,1,y1-y0-6,'#e4e9f0');
-  // torres de canhão laterais (iluminadas por holofote)
-  for(const ty of[y0+30,y0+48]){R(cx-4,ty,9,8,'#161a22');R(cx-3,ty+1,7,6,'#59616e');R(cx-3,ty+1,7,2,'#9aa6b6');R(cx-1,ty+3,3,3,'#161a22');R(cx,ty+7,1,4,'#161a22')}
-  // nariz: cone + mastro
-  R(cx-3,y1-2,7,6,dk);R(cx-2,y1-1,5,4,md);R(cx-2,y1-1,2,3,c2);R(cx,y1+4,1,4,RED);
-  // cabine de comando
-  R(cx-6,y1-17,13,11,'#161a22');R(cx-5,y1-16,11,9,'#59616e');R(cx-5,y1-16,11,2,'#9aa6b6');R(cx-4,y1-13,9,4,'#8cecff');R(cx-4,y1-13,3,1,'#fff');R(cx-1,y1-13,1,4,'#161a22');R(cx+2,y1-13,1,4,'#161a22');
+  const W=72,H=100,cx=36,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),R=(x,y,w,h,f)=>{g.fillStyle=f;g.fillRect(x,y,w,h)};
+  const A=17,B=44,CY=54,tones=['#fbf3d2','#eadfb4','#d2c391','#b0a070','#85774f'],ol='#1c2230',fin='#8a3a30',finL='#c0584a';
+  const hwAt=y=>{const t=(y-CY)/B;return t*t>=1?0:Math.round(A*Math.sqrt(1-t*t))};
+  // empenagem (aletas traseiras, parte de cima do sprite)
+  for(let y=10;y<=40;y++){const hw=hwAt(y),out=hw+Math.max(0,13-Math.round((y-10)*.42));for(let dx=hw-2;dx<=out;dx++)for(const sg of[-1,1]){const e=dx===out||y===10;R(cx+sg*dx,y,1,1,e?ol:(dx>out-3?finL:fin))}}
+  // envelope
+  for(let y=CY-B;y<=CY+B;y++){const hw=hwAt(y);if(hw<1)continue;for(let dx=-hw;dx<=hw;dx++){const p=dx/hw,e=Math.abs(dx)===hw||y===CY-B||y===CY+B;R(cx+dx,y,1,1,e?ol:tones[Math.min(4,Math.floor((p*.92+1)/2*5))])}}
+  // nervuras curvas
+  for(let ry=18;ry<92;ry+=8){const hw=hwAt(ry);for(let dx=-hw+1;dx<hw;dx++){const yy=ry+Math.round(dx*dx/(hw*4.5));if(hwAt(yy)>Math.abs(dx))R(cx+dx,yy,1,1,'rgba(70,55,30,.38)')}}
+  // faixas vermelhas
+  for(const ry of[34,78]){const hw=hwAt(ry);for(let dx=-hw+1;dx<hw;dx++){const yy=ry+Math.round(dx*dx/(hw*4.5));R(cx+dx,yy,1,3,Math.abs(dx)<hw-1?(dx<-hw*.3?'#e0505e':'#b0303c'):ol)}}
+  // espinha dorsal, torretas e passarela
+  R(cx,20,1,70,'rgba(40,30,20,.55)');for(const ty of[46,64]){R(cx-2,ty,5,5,ol);R(cx-1,ty+1,3,3,'#59616e');R(cx,ty+1,1,1,'#aab4c2')}
+  // nariz
+  R(cx-3,CY+B-4,7,4,'#8a929e');R(cx-3,CY+B-4,7,1,ol);R(cx-1,CY+B-1,3,3,ol);R(cx,CY+B,1,1,'#c8d0da');
+  // cauda: fio central escuro
+  R(cx-1,10,3,26,fin);R(cx-1,10,1,26,finL);R(cx-2,9,5,1,ol);
   return c;
 }
 function shipBossCv(c1,c2){
-  const W=64,H=96,cx=32,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),R=(x,y,w,h,f)=>{g.fillStyle=f;g.fillRect(x,y,w,h)};
-  const dk=shade(c1,.45),md=shade(c1,.75),y0=8,y1=90,HW=16;
-  const hwAt=y=>{const t=(y-y0)/(y1-y0);if(t<.04)return HW-3;if(t<.08)return HW-1;if(t<.68)return HW;const u=(t-.68)/.32;return Math.round(HW*Math.sqrt(Math.max(0,1-u*u*u)))};
-  for(let y=y0;y<=y1;y++){const hw=hwAt(y);for(let dx=-hw;dx<=hw;dx++){const e=Math.abs(dx)>=hw-0&&hw>1,inner=Math.abs(dx)<hw-3,t=(dx+hw)/(2*hw+.001);R(cx+dx,y,1,1,e?'#1c2230':(!inner?(t<.5?md:dk):(t<.25?c2:(t<.7?shade(c2,.88):md))))}}
-  // linha central e tábuas do convés
-  for(let y=y0+3;y<y1-8;y+=4){const hw=hwAt(y)-4;R(cx-hw,y,hw*2+1,1,'rgba(30,40,60,.35)')}
-  R(cx,y0+3,1,y1-y0-14,'rgba(255,255,255,.35)');
-  // faixa vermelha na proa e popa
-  R(cx-HW+3,y0+2,2*HW-5,2,'#c8323e');
-  // torres principais (duas na proa, uma na popa) com canos para baixo
-  const tur=(ty,big)=>{const w=big?13:11;R(cx-w/2-1,ty-1,w+3,w+3,'#161a22');R(cx-w/2,ty,w+1,w+1,'#6a7a90');R(cx-w/2,ty,3,w+1,'#a9bbd2');R(cx+w/2-2,ty,3,w+1,'#3a4658');
-    R(cx-3,ty+w+1,2,9,'#161a22');R(cx+1,ty+w+1,2,9,'#161a22');R(cx-3,ty+w+1,1,8,'#59616e');R(cx+1,ty+w+1,1,8,'#59616e');R(cx-2,ty+3,5,5,'#2a323f')};
-  tur(14,false);tur(56,true);
-  // ponte de comando com chaminé
-  R(cx-7,34,15,17,'#161a22');R(cx-6,35,13,15,'#8394ab');R(cx-6,35,13,3,'#c0d0e4');R(cx-5,40,11,3,'#8cecff');R(cx-5,40,3,1,'#fff');R(cx-6,47,13,2,dk);
-  R(cx-4,26,9,8,'#161a22');R(cx-3,27,7,6,'#3a3f4a');R(cx-3,27,7,1,'#c8323e');
-  // mastro
-  R(cx,28,1,-6+8,'#161a22');
-  // botes salva-vidas
-  for(const sg of[-1,1])for(const y of[38,46])R(cx+sg*11-1,y,3,5,'#d8a24a');
-  // espuma na proa
-  for(let y=y1-12;y<=y1;y++){const hw=hwAt(y);R(cx-hw-1,y,1,1,'rgba(255,255,255,.55)');R(cx+hw+1,y,1,1,'rgba(255,255,255,.55)')}
+  const W=72,H=104,cx=36,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),R=(x,y,w,h,f)=>{g.fillStyle=f;g.fillRect(x,y,w,h)};
+  const y0=6,y1=98,HW=18,ol='#141a24',hull='#4b5a70',hullL='#6f819b',deck='#aaa58f',deckD='#8f8a76';
+  const hwAt=y=>{const t=(y-y0)/(y1-y0);if(t<.03)return HW-4;if(t<.07)return HW-2;if(t<.62)return HW;const u=(t-.62)/.38;return Math.round(HW*Math.sqrt(Math.max(0,1-Math.pow(u,2.2))))};
+  for(let y=y0;y<=y1;y++){const hw=hwAt(y);for(let dx=-hw;dx<=hw;dx++){const a=Math.abs(dx);let col;if(a>=hw)col=ol;else if(a>=hw-2)col=dx<0?hullL:hull;else if(a===hw-3)col='#c9d3df';else col=((y>>2)&1)?deck:deckD;R(cx+dx,y,1,1,col)}}
+  // faixa central de convés
+  for(let y=y0+4;y<y1-14;y++)R(cx,y,1,1,'rgba(255,255,255,.18)');
+  const disc=(x,y,r,f)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r+r*.6)R(x+i,y+j,1,1,f)};
+  // heliponto
+  disc(cx,19,8,'#3d4654');disc(cx,19,7,'#5a6474');g.strokeStyle='#e6e6e6';g.lineWidth=1;g.beginPath();g.arc(cx+.5,19.5,6.5,0,6.29);g.stroke();
+  for(const[x,y,w,h]of[[-3,16,1,7],[3,16,1,7],[-3,19,7,1]])R(cx+x,y,w,h,'#f4f4f4');
+  // torres de canhão
+  const tur=(ty,r,bl)=>{disc(cx,ty,r+1,ol);disc(cx,ty,r,'#74829a');for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r&&i+j<-r*.55)R(cx+i,ty+j,1,1,'#b9c8dc');disc(cx+1,ty+1,2,'#3a4352');
+    R(cx-4,ty+r-1,3,bl+2,ol);R(cx+2,ty+r-1,3,bl+2,ol);R(cx-3,ty+r,1,bl,'#59636f');R(cx+3,ty+r,1,bl,'#59636f');R(cx-4,ty+r+bl,3,1,'#ffb347');R(cx+2,ty+r+bl,3,1,'#ffb347')};
+  tur(37,7,5);tur(81,7,8);
+  // superestrutura + chaminé
+  R(cx-8,50,17,14,ol);R(cx-7,51,15,12,'#8c9bb0');R(cx-7,51,15,3,'#cdd9e8');R(cx-6,55,13,3,'#0e1420');R(cx-6,55,13,2,'#8cecff');R(cx-6,55,3,1,'#fff');R(cx-7,60,15,3,'#56657c');
+  R(cx-5,47,11,4,ol);R(cx-4,48,9,3,'#a6b4c8');R(cx,45,1,3,ol);R(cx-4,46,9,1,ol);R(cx-1,45,3,1,'#c8323e');
+  disc(cx,68,4,ol);disc(cx,68,3,'#2e343f');disc(cx,68,2,'#c8323e');disc(cx,68,1,'#1d222b');
+  // botes e coletes
+  for(const sg of[-1,1])for(const y of[52,58])R(cx+sg*12-1,y,3,5,'#d8a24a'),R(cx+sg*12,y+1,1,3,'#fff0c0');
+  // espuma na proa e laterais
+  for(let y=62;y<=y1;y+=2){const hw=hwAt(y);R(cx-hw-1,y,1,1,'rgba(255,255,255,.7)');R(cx+hw+1,y,1,1,'rgba(255,255,255,.7)')}
   return c;
 }
 function bossSpr(type,col){
@@ -1041,6 +1037,7 @@ function drawPod(b,p,px,py){
     ctx.fillStyle=f?'#fff':'#6a5a30';ctx.fillRect(px-4,py-6,9,10);ctx.fillStyle=f?'#fff':'#a89050';ctx.fillRect(px-4,py-6,3,10);
     ctx.fillStyle=f?'#fff':'#2a2e34';ctx.fillRect(px-1,py+4,3,9);ctx.fillStyle=f?'#fff':'#ff9a3c';ctx.fillRect(px-1,py+12,3,1);
   }else if(T==='battleship'){
+    {const sg=p.ox<0?1:-1;ctx.fillStyle='#050810';ctx.fillRect(px+sg*6-(sg<0?3:0),py-2,4,5);ctx.fillStyle=f?'#fff':'#6a7a90';ctx.fillRect(px+sg*6-(sg<0?3:0),py-1,4,3)}
     ctx.fillStyle='#050810';ctx.fillRect(px-6,py-8,13,16);
     ctx.fillStyle=f?'#fff':'#5a6a80';ctx.fillRect(px-5,py-7,11,14);ctx.fillStyle=f?'#fff':'#9db2cc';ctx.fillRect(px-5,py-7,4,14);ctx.fillStyle=f?'#fff':'#3a4658';ctx.fillRect(px+3,py-7,3,14);
     ctx.fillStyle='#050810';ctx.fillRect(px-4,py+6,3,9);ctx.fillRect(px+1,py+6,3,9);
@@ -1143,7 +1140,7 @@ function completeStage(wasBoss){
 }
 function gameOver(cause){
   if(G.state==='over')return;G.state='over';teleLog('morreu');recStats(cause);sset('run',null);Music.setBoss(false);player.dead=true;explode(player.x,player.y,24);
-  const earned=G.coins+Math.floor(G.score/2500),rec=G.score>save.best;if(rec)save.best=G.score;save.coins+=earned;persist();
+  const earned=G.coins+Math.floor(G.score/6000),rec=G.score>save.best;if(rec)save.best=G.score;save.coins+=earned;persist();
   const sis=(G.level-1)%4+1,row=(a,b)=>'<div class="stat"><span>'+a+'</span><b>'+b+'</b></div>';
   const ups=UPG.filter(c=>lv(c.id)).map(c=>c.name+' '+lv(c.id)).join(' · ')||'Nenhum';
   setTimeout(()=>{
@@ -1485,45 +1482,45 @@ const live=k=>(ST()[k]||0)+(inRun()?(k==='kills'?G.kills:k==='graze'?G.graze:k==
 const bkN=t=>(ST().bk&&ST().bk[t])||0;
 const ACH=[
   // progresso
-  {id:'s2',n:'Rumo ao Deserto',d:'Derrote o chefe do setor 1',r:30,p:()=>G.level>=5&&inRun()||(ST().bestLevel||0)>=5},
-  {id:'s3',n:'Selva Adentro',d:'Chegue ao setor 3',r:60,p:()=>(ST().bestLevel||0)>=9||(inRun()&&G.level>=9)},
-  {id:'s5',n:'Veterano',d:'Chegue ao setor 5',r:120,p:()=>(ST().bestLevel||0)>=17||(inRun()&&G.level>=17)},
-  {id:'s7',n:'Lenda do Céu',d:'Chegue ao setor 7',r:120,p:()=>(ST().bestLevel||0)>=25||(inRun()&&G.level>=25)},
+  {id:'s2',n:'Rumo ao Deserto',d:'Derrote o chefe do setor 1',r:10,p:()=>G.level>=5&&inRun()||(ST().bestLevel||0)>=5},
+  {id:'s3',n:'Selva Adentro',d:'Chegue ao setor 3',r:20,p:()=>(ST().bestLevel||0)>=9||(inRun()&&G.level>=9)},
+  {id:'s5',n:'Veterano',d:'Chegue ao setor 5',r:40,p:()=>(ST().bestLevel||0)>=17||(inRun()&&G.level>=17)},
+  {id:'s7',n:'Lenda do Céu',d:'Chegue ao setor 7',r:40,p:()=>(ST().bestLevel||0)>=25||(inRun()&&G.level>=25)},
   // chefes
-  {id:'b1',n:'Derrubador de Fortalezas',d:'Derrote o Bombardeiro',r:30,p:()=>bkN('fort')>0},
-  {id:'b2',n:'Caça-Tanques',d:'Derrote o Panzer',r:30,p:()=>bkN('panzer')>0},
-  {id:'b3',n:'Fim do Zepelim',d:'Derrote o Zepelim',r:30,p:()=>bkN('zeppelin')>0},
-  {id:'b4',n:'Olho da Tempestade',d:'Derrote o chefe da tempestade',r:30,p:()=>bkN('storm')>0},
-  {id:'ball',n:'Caçador de Chefes',d:'Derrote todos os tipos de chefe',r:120,p:()=>BOSS_ORDER.every(t=>bkN(t)>0)},
-  {id:'bclean',n:'Intocável',d:'Derrote um chefe sem ser atingido',r:60,p:()=>!!ST().bclean},
+  {id:'b1',n:'Derrubador de Fortalezas',d:'Derrote o Bombardeiro',r:10,p:()=>bkN('fort')>0},
+  {id:'b2',n:'Caça-Tanques',d:'Derrote o Panzer',r:10,p:()=>bkN('panzer')>0},
+  {id:'b3',n:'Fim do Zepelim',d:'Derrote o Zepelim',r:10,p:()=>bkN('zeppelin')>0},
+  {id:'b4',n:'Olho da Tempestade',d:'Derrote o chefe da tempestade',r:10,p:()=>bkN('storm')>0},
+  {id:'ball',n:'Caçador de Chefes',d:'Derrote todos os tipos de chefe',r:40,p:()=>BOSS_ORDER.every(t=>bkN(t)>0)},
+  {id:'bclean',n:'Intocável',d:'Derrote um chefe sem ser atingido',r:20,p:()=>!!ST().bclean},
   // combate
-  {id:'k100',n:'Primeiro Sangue',d:'100 abates no total',r:30,p:()=>live('kills')>=100},
-  {id:'k1000',n:'Esquadrão Inimigo',d:'1.000 abates no total',r:60,p:()=>live('kills')>=1000},
-  {id:'k5000',n:'Exterminador',d:'5.000 abates no total',r:120,p:()=>live('kills')>=5000},
-  {id:'gz',n:'Dançarino de Balas',d:'500 grazes no total',r:60,p:()=>live('graze')>=500},
+  {id:'k100',n:'Primeiro Sangue',d:'100 abates no total',r:10,p:()=>live('kills')>=100},
+  {id:'k1000',n:'Esquadrão Inimigo',d:'1.000 abates no total',r:20,p:()=>live('kills')>=1000},
+  {id:'k5000',n:'Exterminador',d:'5.000 abates no total',r:40,p:()=>live('kills')>=5000},
+  {id:'gz',n:'Dançarino de Balas',d:'500 grazes no total',r:20,p:()=>live('graze')>=500},
   // partidas
-  {id:'r10',n:'Piloto Dedicado',d:'Jogue 10 partidas',r:30,p:()=>(ST().runs||0)>=10},
-  {id:'r50',n:'Viciado em Voo',d:'Jogue 50 partidas',r:60,p:()=>(ST().runs||0)>=50},
+  {id:'r10',n:'Piloto Dedicado',d:'Jogue 10 partidas',r:10,p:()=>(ST().runs||0)>=10},
+  {id:'r50',n:'Viciado em Voo',d:'Jogue 50 partidas',r:20,p:()=>(ST().runs||0)>=50},
   // pontos
-  {id:'p50',n:'Pontuação Alta',d:'50.000 pontos em uma partida',r:30,p:()=>inRun()&&G.score>=50000||(ST().maxScore||0)>=50000},
-  {id:'p200',n:'Pontuação Épica',d:'200.000 pontos em uma partida',r:60,p:()=>inRun()&&G.score>=200000||(ST().maxScore||0)>=200000},
-  {id:'p500',n:'Pontuação Mítica',d:'500.000 pontos em uma partida',r:120,p:()=>inRun()&&G.score>=500000||(ST().maxScore||0)>=500000},
+  {id:'p50',n:'Pontuação Alta',d:'50.000 pontos em uma partida',r:10,p:()=>inRun()&&G.score>=50000||(ST().maxScore||0)>=50000},
+  {id:'p200',n:'Pontuação Épica',d:'200.000 pontos em uma partida',r:20,p:()=>inRun()&&G.score>=200000||(ST().maxScore||0)>=200000},
+  {id:'p500',n:'Pontuação Mítica',d:'500.000 pontos em uma partida',r:40,p:()=>inRun()&&G.score>=500000||(ST().maxScore||0)>=500000},
   // especiais
-  {id:'sp1',n:'Missão Especial',d:'Complete uma fase especial',r:30,p:()=>(ST().sp||0)>=1},
-  {id:'sp5',n:'Agente Especial',d:'Complete 5 fases especiais',r:60,p:()=>(ST().sp||0)>=5},
-  {id:'spc',n:'Sem Arranhão',d:'Complete uma fase especial sem ser atingido',r:60,p:()=>!!ST().spclean},
+  {id:'sp1',n:'Missão Especial',d:'Complete uma fase especial',r:10,p:()=>(ST().sp||0)>=1},
+  {id:'sp5',n:'Agente Especial',d:'Complete 5 fases especiais',r:20,p:()=>(ST().sp||0)>=5},
+  {id:'spc',n:'Sem Arranhão',d:'Complete uma fase especial sem ser atingido',r:20,p:()=>!!ST().spclean},
   // build
-  {id:'syn',n:'Combinação Perfeita',d:'Ative uma sinergia',r:30,p:()=>inRun()&&typeof synList==='function'&&synList().length>=1},
-  {id:'syn3',n:'Arsenal Completo',d:'Ative 3 sinergias na mesma partida',r:60,p:()=>inRun()&&typeof synList==='function'&&synList().length>=3},
-  {id:'leg',n:'Carta Lendária',d:'Escolha uma carta lendária',r:60,p:()=>!!ST().leg},
+  {id:'syn',n:'Combinação Perfeita',d:'Ative uma sinergia',r:10,p:()=>inRun()&&typeof synList==='function'&&synList().length>=1},
+  {id:'syn3',n:'Arsenal Completo',d:'Ative 3 sinergias na mesma partida',r:20,p:()=>inRun()&&typeof synList==='function'&&synList().length>=3},
+  {id:'leg',n:'Carta Lendária',d:'Escolha uma carta lendária',r:20,p:()=>!!ST().leg},
   // hangar
-  {id:'buy',n:'Novo Avião',d:'Compre um avião no hangar',r:30,p:()=>save.unlocked.length>=2},
-  {id:'hall',n:'Hangar Completo',d:'Desbloqueie todos os aviões',r:120,p:()=>save.unlocked.length>=PLANE_IDS.length},
+  {id:'buy',n:'Novo Avião',d:'Compre um avião no hangar',r:10,p:()=>save.unlocked.length>=2},
+  {id:'hall',n:'Hangar Completo',d:'Desbloqueie todos os aviões',r:40,p:()=>save.unlocked.length>=PLANE_IDS.length},
   // dinheiro
-  {id:'c500',n:'Mealheiro',d:'Ganhe 500 moedas no total',r:30,p:()=>live('coins')>=500},
-  {id:'c2000',n:'Magnata',d:'Ganhe 2.000 moedas no total',r:60,p:()=>live('coins')>=2000}
+  {id:'c500',n:'Mealheiro',d:'Ganhe 500 moedas no total',r:10,p:()=>live('coins')>=500},
+  {id:'c2000',n:'Magnata',d:'Ganhe 2.000 moedas no total',r:20,p:()=>live('coins')>=2000}
 ];
-const TIER={30:'BRONZE',60:'PRATA',120:'OURO'};
+const TIER={10:'BRONZE',20:'PRATA',40:'OURO'};
 const achDone=()=>(ST().ach=ST().ach||{});
 let _achQ=[],_achBusy=false;
 function achToast(a){
