@@ -184,7 +184,7 @@ const mem={};
 function sget(k,d){try{const v=localStorage.getItem('asas_'+k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}}
 function sset(k,v){mem[k]=v;try{localStorage.setItem('asas_'+k,JSON.stringify(v))}catch(e){}}
 const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),stats:sget('stats',{}),dbg:sget('dbg',{}),opt:sget('opt',{}),tele:sget('tele',[])};
-const VERSION='1.4.0',BUILD='10/11/2026';
+const VERSION='1.4.1',BUILD='10/11/2026';
 function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('stats',save.stats);sset('dbg',save.dbg);sset('opt',save.opt);sset('tele',save.tele)}
 
 /* ---------- áudio 8 bits (Web Audio, sem ficheiros) ---------- */
@@ -390,7 +390,7 @@ const G={state:'menu',time:0,stageT:0,scroll:0,scrollSpeed:40,score:0,coins:0,li
 let hazards=[],bolts=[],player=null,enemies=[],ebul=[],pbul=[],drops=[],parts=[],texts=[],rings=[],boss=null,script=[],timers=[],warns=[],missiles=[];
 let upg={},upgR={},theme='ocean',mods=[],pw={shrink:0,rapid:0,shield:0,power:0,slow:0};
 const lv=id=>upg[id]||0,has=(a,b)=>lv(a)>0&&lv(b)>0,RM={Common:1,Uncommon:1.1,Rare:1.2,Legendary:1.35},rmul=id=>RM[upgR[id]||'Common'];
-const hasMod=m=>mods.includes(m);
+const hasMod=m=>mods.includes(m)&&!((m==='storm'||m==='wind')&&(G.special==='mines'||G.special==='canyon'));
 const ef=()=>(G.time<pw.slow?.5:1)*(G.time<G.warpUntil?.35:1);   // fator de tempo do mundo inimigo
 const later=(s,fn)=>timers.push({t:G.time+s,fn});
 
@@ -793,7 +793,7 @@ const RCOL={Common:'#c5d0e4',Uncommon:'#6cf0a0',Rare:'#5ce1ff',Legendary:'#ffd84
 const SYN=[['spread','dmg','CHUVA DE CHUMBO'],['wing','missile','ESQUADRAO'],['laser','rate','FUSAO'],['graze','bomb','REFLEXO'],['chain','dmg','TEMPESTADE'],['orbit','rate','CICLONE'],['reflect','graze','ESPELHO NEGRO']];
 const synList=()=>SYN.filter(s=>has(s[0],s[1])).map(s=>s[2]);
 let cardsBoost=false,riskBoost=false;
-function rollRar(c){let r=Math.random();if(cardsBoost)r*=riskBoost?.35:.7;const rr=r<.65?'Common':r<.9?'Uncommon':r<.98?'Rare':'Legendary';if(c.rar.includes(rr))return rr;return(rr==='Rare'||rr==='Legendary')?c.rar[c.rar.length-1]:c.rar[0]}
+function rollRar(c){let r=Math.random();if(cardsBoost)r=riskBoost?.9+.1*r:.78+.22*r;const rr=r<.65?'Common':r<.9?'Uncommon':r<.98?'Rare':'Legendary';if(c.rar.includes(rr))return rr;return(rr==='Rare'||rr==='Legendary')?c.rar[c.rar.length-1]:c.rar[0]}
 const RTX={spread:'dano',laser:'dano',missile:'dano',wing:'dano dos caças',chain:'dano',orbit:'dano',dmg:'efeito',rate:'efeito',speed:'efeito'};
 function rarTxt(c,r){if(r==='Common')return'';if(c.id==='hull')return r==='Legendary'?'<p class="rb" style="color:'+RCOL[r]+'">★ Cura tudo ao pegar</p>':r==='Rare'?'<p class="rb" style="color:'+RCOL[r]+'">★ Cura +1 extra</p>':'';return''}
 function showCards(boss,rerolled){
@@ -807,11 +807,11 @@ function showCards(boss,rerolled){
   chosen.map(c=>({c,r:rollRar(c)})).forEach(({c,r},i)=>{
     const next=lv(c.id)+1,holder=c.slot?UPG.find(o=>o.slot===c.slot&&o.id!==c.id&&lv(o.id)>0):null,b=document.createElement('button');
     b.className='card';b.style.setProperty('--cc',RCOL[r]);b.style.animationDelay=(i*.12)+'s';
-    b.innerHTML='<div class="bd"><img src="'+upgIcon(c.icon||c.id)+'" alt=""></div><div><div class="rr">'+(c.fx?'BÔNUS':RNAME[r]+' · NV '+next+'/3')+'</div><h3>'+c.name+'</h3><p>'+c.desc[next-1]+'</p><p class="e">'+c.eff+'</p>'+rarTxt(c,r)+(holder?'<p class="w">⚠ Troca '+holder.name+' (perde NV '+lv(holder.id)+')</p>':'')+'</div>';
+    b.innerHTML='<div class="bd"><img src="'+upgIcon(c.icon||c.id)+'" alt=""></div><div><div class="rr">'+(c.fx?'BÔNUS':RNAME[r]+' · NV '+next+'/3 · '+(holder?'TROCA':next>1?'MELHORIA':'NOVA'))+'</div><h3>'+c.name+'</h3><p>'+c.desc[next-1]+'</p><p class="e">'+c.eff+'</p>'+rarTxt(c,r)+(holder?'<p class="w">⚠ Troca '+holder.name+' (perde NV '+lv(holder.id)+')</p>':'')+'</div>';
     b.onclick=()=>pickCard(c,next,r);box.appendChild(b);
   });
   const rb=$('btnReroll');rb.hidden=!(G.lives>=2&&!rerolled);rb.onclick=()=>{if(G.lives<2||G.rerolled)return;G.lives--;sfx('hurt');updHud();showCards(boss,true)};
-  $('cLegend').textContent=UPG.filter(c=>lv(c.id)).map(c=>c.name+' '+lv(c.id)).join(' · ')||'Sem upgrades ainda';$('cLegend').textContent+=' · CARTAS '+UPG.filter(c=>lv(c.id)).length+'/'+CARD_MAX;
+  $('cLegend').textContent=UPG.filter(c=>lv(c.id)).map(c=>c.name+' '+lv(c.id)).join(' · ')||'Sem upgrades ainda';{const n=UPG.filter(c=>lv(c.id)).length,e=document.createElement('div');e.style.cssText='margin-top:4px;color:'+(n>=CARD_MAX?'var(--gold)':'inherit');e.textContent='CARTAS '+n+'/'+CARD_MAX+(n>=CARD_MAX?' · limite atingido: só melhorias e trocas':'');$('cLegend').appendChild(e)}
   cardsBoost=false;el.dataset.boss=boss?'1':'';
 }
 function pickCard(c,next,r){
