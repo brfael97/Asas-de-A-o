@@ -184,7 +184,7 @@ const mem={};
 function sget(k,d){try{const v=localStorage.getItem('asas_'+k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}}
 function sset(k,v){mem[k]=v;try{localStorage.setItem('asas_'+k,JSON.stringify(v))}catch(e){}}
 const save={coins:sget('coins',0),best:sget('best',0),unlocked:sget('unlocked',['spit']),sel:sget('sel','spit'),stats:sget('stats',{}),dbg:sget('dbg',{}),opt:sget('opt',{}),tele:sget('tele',[])};
-const VERSION='1.4.2',BUILD='10/11/2026';
+const VERSION='1.4.3',BUILD='10/11/2026';
 function persist(){sset('coins',save.coins);sset('best',save.best);sset('unlocked',save.unlocked);sset('sel',save.sel);sset('stats',save.stats);sset('dbg',save.dbg);sset('opt',save.opt);sset('tele',save.tele)}
 
 /* ---------- áudio 8 bits (Web Audio, sem ficheiros) ---------- */
@@ -532,7 +532,7 @@ function efire(e){
 }
 function mineBurst(e){G.mineNext=G.time+1.2;
   const d=player?Math.hypot(e.x-player.x,e.y-player.y):999;explode(e.x,e.y,7);e.dead=true;
-  if(d<95){const n=G.sector>=3?6:4,a=Math.atan2(player.y-e.y,player.x-e.x);for(let i=0;i<n;i++)ebullet(e.x,e.y,i*Math.PI*2/n+.3,44,'dot');for(const k of[-.22,.22])ebullet(e.x,e.y,a+k,52,'dot')}
+  if(d<95){for(let i=0;i<4;i++)ebullet(e.x,e.y,i*Math.PI/2+.3,36,'dot')}
 }
 function updEnemy(e,dt){
   e.age+=dt;e.flash=Math.max(0,e.flash-dt);
@@ -547,7 +547,7 @@ function updEnemy(e,dt){
       if(!e.dash){e.y+=e.vy*dt;if(e.y>=e.ty){e.tel+=dt;if(e.tel>.55){e.dash=true;const a=Math.atan2(player.y-e.y,player.x-e.x);e.vx=Math.cos(a)*140;e.vy=Math.sin(a)*140}}}
       else{e.x+=e.vx*dt;e.y+=e.vy*dt}break;
   }
-  if(e.t==='mine'&&!e.rock&&player&&G.state==='play'){const d=Math.hypot(e.x-player.x,e.y-player.y);if(!e.arm&&d<29&&G.time>=(G.mineNext||0))e.arm=.85;if(e.arm>0){e.arm-=dt;e.tel=Math.max(.01,e.arm);if(e.arm<=0)mineBurst(e)}}
+  if(e.t==='mine'&&!e.rock&&player&&G.state==='play'){const d=Math.hypot(e.x-player.x,e.y-player.y);if(!e.arm&&d<24&&G.time>=(G.mineNext||0)){e.arm=1.1;e.armMax=1.1}if(e.arm>0){e.arm-=dt;e.tel=Math.max(.01,e.arm);if(e.arm<=0)mineBurst(e)}}
   if(e.sh&&e.y>4&&e.y<H-30&&!(e.mv==='dive')){
     e.shT-=dt;if(e.sh==='ring8'&&e.shT<.4&&e.shT>0)e.tel=.4;
     if(e.shT<=0){efire(e);e.shT=e.cd*(e.cd>.5?rand(.85,1.15):1);e.tel=0}
@@ -580,10 +580,10 @@ const WV={
   rain(){for(let i=0;i<14;i++)later(i*.27,()=>spawn('fighter',rand(14,W-14),-10,{vy:78,sh:'down',cd:1.6}))},
   bomber(){const x=W/2+rand(-30,30);spawn('bomber',x,-22,{mv:'hold',vy:34,ty:52,holdT:8.5,sh:'ring8',cd:2.7,hp:12+Math.floor(G.level/2),drop:true});later(1.2,()=>{spawn('fighter',x-44,-10,{mv:'sine',vy:36,sh:'aim1',cd:2.6});spawn('fighter',x+44,-10,{mv:'sine',vy:36,sh:'aim1',cd:2.6,sa:3})})},
   convoy(){const x=rand(44,W-44);for(let i=0;i<5;i++)later(i*.8,()=>spawn('ground',x+Math.sin(i)*4,-10,{mv:'ground',sh:'ball',cd:3.4,hp:2+Math.floor(G.level/4),bonus:i%2===0?1:0,drop:i===4}));later(1.2,()=>{spawn('fighter',x-40,-10,{mv:'sine',vy:40,sh:'aim1',cd:2.6});spawn('fighter',x+40,-10,{mv:'sine',vy:40,sh:'aim1',cd:2.6,sa:3})})},
-  canyon(){let g=Math.floor(rand(1,4)),d=Math.random()<.5?-1:1;const gw=3,rows=13;for(let r=0;r<rows;r++)later(r*.5,()=>{if(r%3===2){g+=d*2}else if(Math.random()<.9)g+=d;if(g<0||g>9-gw){d=-d;g=clamp(g,0,9-gw)}else if(Math.random()<.15)d=-d;for(let i=0;i<9;i++){if(i>=g&&i<g+gw)continue;spawn('mine',10+i*20,-10,{mv:'ground',rock:true,spr:rockSpr()})}})},
-  mines(){for(let r=0;r<2;r++)later(r*1.4,()=>{if(G.mg===undefined){G.mg=Math.floor(rand(0,6));G.md=Math.random()<.5?-1:1}
-    const st=2+(Math.random()<.4?1:0);let ng=G.mg+G.md*st;if(ng<0||ng>5){G.md=-G.md;ng=G.mg+G.md*st}ng=clamp(ng,0,5);if(ng===G.mg){G.md=-G.md;ng=clamp(G.mg+G.md*2,0,5)}if(Math.random()<.2)G.md=-G.md;G.mg=ng;const gg=ng;
-    for(let i=0;i<8;i++){if(i>=gg&&i<=gg+2)continue;spawn('mine',14+i*22,-8,{mv:'ground'})}})},
+  canyon(){let g=Math.floor(rand(1,4)),d=Math.random()<.5?-1:1;const gw=3,rows=13;for(let r=0;r<rows;r++)later(r*.5/canyonF(),()=>{if(r%3===2){g+=d*2}else if(Math.random()<.9)g+=d;if(g<0||g>9-gw){d=-d;g=clamp(g,0,9-gw)}else if(Math.random()<.15)d=-d;for(let i=0;i<9;i++){if(i>=g&&i<g+gw)continue;spawn('mine',10+i*20,-10,{mv:'ground',rock:true,spr:rockSpr()})}})},
+  mines(){for(let r=0;r<2;r++)later(r*1.4,()=>{if(G.mg===undefined){G.mg=Math.floor(rand(0,5));G.md=Math.random()<.5?-1:1}
+    const st=2+(Math.random()<.4?1:0);let ng=G.mg+G.md*st;if(ng<0||ng>4){G.md=-G.md;ng=G.mg+G.md*st}ng=clamp(ng,0,4);if(ng===G.mg){G.md=-G.md;ng=clamp(G.mg+G.md*2,0,4)}if(Math.random()<.2)G.md=-G.md;G.mg=ng;const gg=ng;
+    for(let i=0;i<8;i++){if(i>=gg&&i<=gg+3)continue;spawn('mine',14+i*22,-8,{mv:'ground'})}})},
   stormw(){const n=3+(G.level>10?1:0);for(let i=0;i<n;i++)lightning(rand(14,W-14),.95+i*.2,18);lightning(player.x,1.25,16);if(G.level>6)lightning(clamp(player.x+rand(-34,34),12,W-12),1.5,16);if(Math.random()<.7)later(.5,()=>spawn('fighter',rand(20,W-20),-10,{vy:60,sh:'aim1',cd:2.2}))},
   ace(){spawn('ace',rand(50,W-50),-14,{mv:'hold',vy:46,ty:60,holdT:9,sh:'spiral',cd:.28,drop:true});later(1,()=>{spawn('fighter',30,-10,{vy:50,mv:'sine',sh:'aim3',cd:3});spawn('fighter',W-30,-10,{vy:50,mv:'sine',sh:'aim3',cd:3,sa:3})})}
 };
@@ -807,8 +807,9 @@ function showCards(boss,rerolled){
   while(chosen.length<3){const fl=FALLBACK.filter(x=>!chosen.includes(x));if(!fl.length)break;chosen.push(fl[Math.floor(Math.random()*fl.length)])}
   chosen.map(c=>({c,r:rollRar(c)})).forEach(({c,r},i)=>{
     const next=lv(c.id)+1,holder=c.slot?UPG.find(o=>o.slot===c.slot&&o.id!==c.id&&lv(o.id)>0):null,b=document.createElement('button');
-    b.className='card';b.style.setProperty('--cc',RCOL[r]);b.style.animationDelay=(i*.12)+'s';
-    b.innerHTML='<div class="bd"><img src="'+upgIcon(c.icon||c.id)+'" alt=""></div><div><div class="rr">'+(c.fx?'BÔNUS':RNAME[r]+' · NV '+next+'/3 · '+(holder?'TROCA':next>1?'MELHORIA':'NOVA'))+'</div><h3>'+c.name+'</h3><p>'+c.desc[next-1]+'</p><p class="e">'+c.eff+'</p>'+rarTxt(c,r)+(holder?'<p class="w">⚠ Troca '+holder.name+' (perde NV '+lv(holder.id)+')</p>':'')+'</div>';
+    const kr=(!holder&&upgR[c.id]&&RM[upgR[c.id]]>RM[r])?upgR[c.id]:r;
+    b.className='card';b.style.setProperty('--cc',RCOL[kr]);b.style.animationDelay=(i*.12)+'s';
+    b.innerHTML='<div class="bd"><img src="'+upgIcon(c.icon||c.id)+'" alt=""></div><div><div class="rr">'+(c.fx?'BÔNUS':RNAME[kr]+(kr!==r?' (mantido)':'')+' · NV '+next+'/3 · '+(holder?'TROCA':next>1?'MELHORIA':'NOVA'))+'</div><h3>'+c.name+'</h3><p>'+c.desc[next-1]+'</p><p class="e">'+c.eff+'</p>'+rarTxt(c,r)+(holder?'<p class="w">⚠ Troca '+holder.name+' (perde NV '+lv(holder.id)+')</p>':'')+'</div>';
     b.onclick=()=>pickCard(c,next,r);box.appendChild(b);
   });
   const rb=$('btnReroll');rb.hidden=!(G.lives>=2&&!rerolled);rb.onclick=()=>{if(G.lives<2||G.rerolled)return;G.lives--;sfx('hurt');updHud();showCards(boss,true)};
@@ -1592,17 +1593,21 @@ function buildReport(all){
   const V=x=>(all||x.v===VERSION)&&!x.d,T=save.tele.filter(V),R=sget('runs',[]).filter(V);
   const L=[],avg=(a,f)=>a.length?a.reduce((s,x)=>s+f(x),0)/a.length:0,f1=n=>n.toFixed(1),pc=(a,b)=>b?Math.round(a/b*100)+'%':'-';
   L.push('ASAS DE ACO v'+VERSION+(all?' (todas as versoes)':'')+' | '+new Date().toISOString().slice(0,16)+' | fases='+T.length+' runs='+R.length+' (debug/cheat excluido)');
-  const G1={};T.forEach(x=>(G1[x.L]=G1[x.L]||[]).push(x));
-  L.push('\n[POR FASE] fase;tipo;tent;ok;mortes;%morte;hits/tent;seg;kills;graze;moedas;score');
-  Object.keys(G1).sort((a,b)=>a-b).forEach(k=>{const a=G1[k],m=a.filter(x=>x.r!=='ok').length,x0=a[0];
-    L.push([k,x0.bs||x0.sp||'normal',a.length,a.length-m,m,pc(m,a.length),f1(avg(a,x=>x.h)),Math.round(avg(a,x=>x.s)),f1(avg(a,x=>x.k)),f1(avg(a,x=>x.gz)),f1(avg(a,x=>x.cn)),Math.round(avg(a,x=>x.sc))].join(';'))});
+  const typ=x=>x.bs||x.sp||'normal',G1={};T.forEach(x=>{const k=x.L+'|'+typ(x);(G1[k]=G1[k]||[]).push(x)});const kSort=(a,b)=>parseInt(a)-parseInt(b)||a.localeCompare(b);
+  L.push('\n[POR FASE] fase;tipo;tent;ok;mortes;%morte;hits/tent;seg;kills;graze;moedas;score;vida inim.(s);%abat. entrando');
+  Object.keys(G1).sort(kSort).forEach(kk=>{const a=G1[kk],m=a.filter(x=>x.r!=='ok').length,x0=a[0],k=parseInt(kk),tt=a.filter(x=>x.ttk);
+    L.push([k,typ(x0),a.length,a.length-m,m,pc(m,a.length),f1(avg(a,x=>x.h)),Math.round(avg(a,x=>x.s)),f1(avg(a,x=>x.k)),f1(avg(a,x=>x.gz)),f1(avg(a,x=>x.cn)),Math.round(avg(a,x=>x.sc)),tt.length?avg(tt,x=>x.ttk).toFixed(2):'-',tt.length?Math.round(avg(tt,x=>x.er))+'%':'-'].join(';'))});
   L.push('\n[CAUSA DOS HITS] por fase (top 4)');
-  Object.keys(G1).sort((a,b)=>a-b).forEach(k=>{const c={};G1[k].forEach(x=>Object.entries(x.hs||{}).forEach(([n,v])=>c[n]=(c[n]||0)+v));const e=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,4);if(e.length)L.push(k+': '+e.map(([n,v])=>n+'='+v).join(' | '))});
+  Object.keys(G1).sort(kSort).forEach(k=>{const c={};G1[k].forEach(x=>Object.entries(x.hs||{}).forEach(([n,v])=>c[n]=(c[n]||0)+v));const e=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,4);if(e.length)L.push(k+': '+e.map(([n,v])=>n+'='+v).join(' | '))});
   const gc={};T.forEach(x=>Object.entries(x.hs||{}).forEach(([n,v])=>gc[n]=(gc[n]||0)+v));
   L.push('TOTAL: '+(Object.entries(gc).sort((a,b)=>b[1]-a[1]).map(([n,v])=>n+'='+v).join(' | ')||'-'));
   L.push('\n[POR TIPO DE FASE] tipo;tent;%morte;hits/tent;seg');
   const GT={};T.forEach(x=>{const k=x.bs?'chefe:'+x.bs:x.sp?'esp:'+x.sp:'normal';(GT[k]=GT[k]||[]).push(x)});
   Object.entries(GT).forEach(([k,a])=>{const m=a.filter(x=>x.r!=='ok').length;L.push([k,a.length,pc(m,a.length),f1(avg(a,x=>x.h)),Math.round(avg(a,x=>x.s))].join(';'))});
+  L.push('\n[POR ARMA] arma;fases;vida inim.(s);abates/s;%abat. entrando;hits/fase (normais+elite)');
+  {const GW={};T.filter(x=>x.wp&&!x.bs&&(!x.sp||x.sp==='elite')).forEach(x=>(GW[x.wp]=GW[x.wp]||[]).push(x));Object.entries(GW).sort().forEach(([k,a])=>L.push([k,a.length,avg(a,x=>x.ttk).toFixed(2),(avg(a,x=>x.k/Math.max(1,x.s))).toFixed(2),Math.round(avg(a,x=>x.er))+'%',f1(avg(a,x=>x.h))].join(';')))}
+  L.push('\n[CHEFES] chefe;fase;arma;seg ate abater;dano/s;hits;build');
+  T.filter(x=>x.bs&&x.bt).forEach(x=>L.push([x.bs,x.L,x.wp,x.bt,x.bdps,x.h,Object.entries(x.bd||{}).map(([i,v])=>i+v).join(' ')].join(';')));
   L.push('\n[POR AVIAO] aviao;runs;nivel medio;melhor;score medio;tempo medio(s)');
   const GP={};R.forEach(x=>(GP[x.pl]=GP[x.pl]||[]).push(x));
   Object.entries(GP).forEach(([k,a])=>L.push([k,a.length,f1(avg(a,x=>x.L)),Math.max(...a.map(x=>x.L)),Math.round(avg(a,x=>x.sc)),Math.round(avg(a,x=>x.tm))].join(';')));
@@ -1867,4 +1872,17 @@ function glossExtra(){
    +'<h3>INIMIGOS DE CADA TEMA</h3><p><b>Oceano</b>: submarinos que submergem (invulneráveis debaixo d\'água). <b>Deserto</b>: lançadores de foguetes guiados. <b>Selva</b>: artilharia escondida na mata. <b>Ártico</b>: chuva de estilhaços de gelo com aviso.</p>';
 }
 renderMenu();
+
+/* ----- v1.4.3: desfiladeiro mais rápido, círculo da mina armada, telemetria de força ----- */
+const canyonF=()=>G.special==='canyon'&&G.sector>=2?1.25:1;
+{const _ue2=updEnemy;updEnemy=function(e,dt){if(e.rock&&canyonF()>1)e.y+=G.scrollSpeed*(canyonF()-1)*dt;_ue2(e,dt)}}
+{const _dr2=drawEnemy;drawEnemy=function(e){_dr2(e);if(e.t==='mine'&&!e.rock&&e.arm>0){const k=e.arm/(e.armMax||1.1),r=6+18*k;ctx.strokeStyle=Math.floor(G.time*10)%2?'#ff3a4a':'#ffb0b8';ctx.lineWidth=1;ctx.beginPath();ctx.arc(Math.round(e.x)+.5,Math.round(e.y)+.5,r,0,6.283);ctx.stroke()}}}
+{const _ke=killEnemy;killEnemy=function(e){if(!e.dead&&e.t!=='mine'&&G.state==='play'){G.ttkS=(G.ttkS||0)+(e.age||0);G.ttkN=(G.ttkN||0)+1;if(e.y<24)G.early=(G.early||0)+1}return _ke(e)}}
+{const _sl2=startLevel;startLevel=function(){G.ttkS=0;G.ttkN=0;G.early=0;G.bossDur=0;return _sl2()}}
+{const _sb2=spawnBoss;spawnBoss=function(){_sb2();G.bossT0=G.time}}
+{const _kb2=killBoss;killBoss=function(){if(boss){G.bossDur=G.time-(G.bossT0||G.time);G.bossHp=boss.maxhp}return _kb2()}}
+function weaponKey(){return(lv('spread')?'leque'+lv('spread'):lv('laser')?'laser'+lv('laser'):'normal')+'+arm'+lv('gun')}
+{const _tl=teleLog;teleLog=function(res){_tl(res);const x=save.tele[save.tele.length-1];if(!x)return;
+  x.ttk=G.ttkN?+(G.ttkS/G.ttkN).toFixed(2):0;x.er=G.ttkN?Math.round(G.early/G.ttkN*100):0;x.wp=weaponKey();
+  const b={};UPG.forEach(c=>{if(lv(c.id))b[c.id]=lv(c.id)});x.bd=b;if(G.bossDur){x.bt=Math.round(G.bossDur);x.bdps=Math.round(G.bossHp/G.bossDur)}persist()}}
 </script>
